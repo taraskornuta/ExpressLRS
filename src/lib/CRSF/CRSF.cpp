@@ -543,10 +543,10 @@ void ICACHE_RAM_ATTR CRSF::handleUARTin()
 {
     uint8_t *SerialInBuffer = CRSF::inBuffer.asUint8_t;
 
-    // if (UARTwdt())
-    // {
-    //     return;
-    // }
+    if (UARTwdt())
+    {
+        return;
+    }
 
     while (CRSF::Port.available())
     {
