@@ -1054,15 +1054,6 @@ void setup()
   }
 
   devicesStart();
-
-  if (init_success)
-  {
-    crsf.Begin();
-#if defined(DEBUG_FREERUN_TX)
-    crsf.CRSFstate = true;
-    UARTconnected();
-#endif
-  }
 }
 
 void loop()
