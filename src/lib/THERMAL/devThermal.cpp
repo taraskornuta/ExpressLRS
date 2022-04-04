@@ -7,6 +7,9 @@
     #error "devThermal not supported on RX"
 #endif
 
+#include "targets.h"
+#include "logging.h"
+
 #include "config.h"
 extern TxConfig config;
 
@@ -36,6 +39,33 @@ bool is_smart_fan_working = false;
 
 #include "POWERMGNT.h"
 
+#if defined(GPIO_PIN_FAN_PWM)
+uint8_t fanSpeeds[] = {
+    31,  // 10mW
+    47,  // 25mW
+    63,  // 50mW
+    95,  // 100mW
+    127, // 250mW
+    191, // 500mW
+    255, // 1000mW
+    255  // 2000mW
+};
+constexpr uint8_t fanChannel=0;
+#endif
+
+#if !defined(FAN_MIN_RUNTIME)
+    #define FAN_MIN_RUNTIME 30U // intervals (seconds)
+#endif
+
+#define FAN_MIN_CHANGETIME 10U  // intervals (seconds)
+
+#if !defined(TACHO_PULSES_PER_REV)
+#define TACHO_PULSES_PER_REV 4
+#endif
+
+static volatile uint16_t tachoPulses = 0;
+static uint16_t currentRPM = 0;
+
 static void initialize()
 {
     #if defined(HAS_THERMAL)
@@ -47,6 +77,17 @@ static void initialize()
     if (GPIO_PIN_FAN_EN != UNDEF_PIN)
     {
         pinMode(GPIO_PIN_FAN_EN, OUTPUT);
+    }
+    else if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
+    {
+        ledcSetup(fanChannel, 25000, 8);
+        ledcAttachPin(GPIO_PIN_FAN_PWM, fanChannel);
+        ledcWrite(fanChannel, 0);
+    }
+    if (GPIO_PIN_FAN_TACHO)
+    {
+        pinMode(GPIO_PIN_FAN_TACHO, INPUT_PULLUP);
+        attachInterrupt(GPIO_PIN_FAN_TACHO, [](){tachoPulses++;}, RISING);
     }
 }
 
@@ -87,7 +128,22 @@ static void timeoutFan()
     {
         if (fanShouldBeOn)
         {
+            #if defined(GPIO_PIN_FAN_PWM)
+            static PowerLevels_e lastPower = MinPower;
+            if (POWERMGNT::currPower() < lastPower && fanStateDuration < FAN_MIN_CHANGETIME)
+            {
+                ++fanStateDuration;
+            }
+            if (POWERMGNT::currPower() > lastPower || (POWERMGNT::currPower() < lastPower && fanStateDuration >= FAN_MIN_CHANGETIME))
+            {
+                ledcWrite(fanChannel, fanSpeeds[POWERMGNT::currPower()]);
+                DBGLN("Fan speed: %d (power) -> %d (pwm)", POWERMGNT::currPower(), fanSpeeds[POWERMGNT::currPower()]);
+                lastPower = POWERMGNT::currPower();
+                fanStateDuration = 0; // reset the timeout
+            }
+            #else
             fanStateDuration = 0; // reset the timeout
+            #endif
         }
         else if (fanStateDuration < firmwareOptions.fan_min_runtime)
         {
@@ -96,7 +152,11 @@ static void timeoutFan()
         else
         {
             // turn off expired
+            #if defined(GPIO_PIN_FAN_PWM)
+            ledcWrite(fanChannel, 0);
+            #else
             digitalWrite(GPIO_PIN_FAN_EN, LOW);
+            #endif
             fanStateDuration = 0;
             fanIsOn = false;
         }
@@ -111,11 +171,32 @@ static void timeoutFan()
         }
         else
         {
+            #if defined(GPIO_PIN_FAN_PWM)
+            ledcWrite(fanChannel, fanSpeeds[POWERMGNT::currPower()]);
+            DBGLN("Fan speed: %d (power) -> %d (pwm)", POWERMGNT::currPower(), fanSpeeds[POWERMGNT::currPower()]);
+            #else
             digitalWrite(GPIO_PIN_FAN_EN, HIGH);
+            #endif
             fanStateDuration = 0;
             fanIsOn = true;
         }
     }
+}
+
+uint16_t getCurrentRPM()
+{
+    return currentRPM;
+}
+
+void timeoutTacho()
+{
+#if defined(GPIO_PIN_FAN_TACHO)
+    uint16_t pulses = tachoPulses;
+    tachoPulses = 0;
+
+    currentRPM = pulses * (60000 / THERMAL_DURATION) / TACHO_PULSES_PER_REV;
+    DBGLN("RPM %d", currentRPM);
+#endif
 }
 
 static int event()
@@ -147,6 +228,10 @@ static int timeout()
     if (GPIO_PIN_FAN_EN != UNDEF_PIN)
     {
         timeoutFan();
+    }
+    if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
+    {
+        timeoutTacho();
     }
 
     return THERMAL_DURATION;
