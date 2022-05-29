@@ -23,6 +23,7 @@
     "debug_backpack_tx": 17,
     "backpack_boot": 26,
     "backpack_en": 25,
+    "passthrough_baud": 230400,
     "led_rgb": 15,
     "led_rgb_isgrb": true,
     "led_rgb_status": [2,3,4,5],
