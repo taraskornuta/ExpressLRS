@@ -119,7 +119,7 @@
 							<option value='3'>DACWRITE</option>
 						</select>
 					</td></tr>
-					<tr><td></td><td>Level Value(s)</td><td><input size='40' id='power_values' name='power_values' type='text'/></td></tr>
+					<tr><td></td><td>Level Value(s)</td><td><input size='40' id='power_values' name='power_values' type='text' class='array'/></td></tr>
 
 					<tr><td colspan='2'><b>Radio Power Detection</td></tr>
 					<tr><td></td><td>PDET pin</td><td><input size='3' id='power_pdet' name='power_pdet' type='text'/></td></tr>
@@ -128,7 +128,7 @@
 @@if isTX:
 					<tr><td colspan='2'><b>Analog Joystick</td></tr>
 					<tr><td></td><td>ADC pin</td><td><input size='3' id='joystick' name='joystick' type='text'/></td></tr>
-					<tr><td></td><td>Values</td><td><input size='20' id='joystick_values' name='joystick_values' type='text'/></td></tr>
+					<tr><td></td><td>Values</td><td><input size='40' id='joystick_values' name='joystick_values' type='text' class='array'/></td></tr>
 
 					<tr><td colspan='2'><b>Digital Joystick</td></tr>
 					<tr><td></td><td>Pin 1</td><td><input size='3' id='five_way1' name='five_way1' type='text'/></td></tr>
@@ -141,11 +141,11 @@
 					<tr><td colspan='2'><b>Mood Lighting</td></tr>
 					<tr><td></td><td>RGB LED pin</td><td><input size='3' id='led_rgb' name='led_rgb' type='text'/></td></tr>
 					<tr><td></td><td>RGB LED is GRB</td><td><input size='3' id='led_rgb_isgrb' name='led_rgb_isgrb' type='checkbox'/></td></tr>
-					<tr><td></td><td>RGB LEDs for Status</td><td><input size='40' id='led_rgb_status' name='led_rgb_status' type='text'/></td><td>Indexes into the "string" of RGB LEDs (if empty then only LED at 0 is used)</td></tr>
+					<tr><td></td><td>RGB LEDs for Status</td><td><input size='40' id='led_rgb_status' name='led_rgb_status' type='text' class='array'/></td><td>Indexes into the "string" of RGB LEDs (if empty then only LED at 0 is used)</td></tr>
 @@if not isTX:
-					<tr><td></td><td>RGB LEDs for VTX Status</td><td><input size='40' id='led_rgb_vtx' name='led_rgb_vtx' type='text'/></td><td>Indexes into the "string" of RGB LEDs (if empty then no VTX status)</td></tr>
+					<tr><td></td><td>RGB LEDs for VTX Status</td><td><input size='40' id='led_rgb_vtx' name='led_rgb_vtx' type='text' class='array'/></td><td>Indexes into the "string" of RGB LEDs (if empty then no VTX status)</td></tr>
 @@end
-					<tr><td></td><td>RGB LEDs for Boot animation</td><td><input size='40' id='led_rgb_boot' name='led_rgb_boot' type='text'/></td><td>Indexes into the "string" of RGB LEDs (if empty status list is used)</td></tr>
+					<tr><td></td><td>RGB LEDs for Boot animation</td><td><input size='40' id='led_rgb_boot' name='led_rgb_boot' type='text' class='array'/></td><td>Indexes into the "string" of RGB LEDs (if empty status list is used)</td></tr>
 					<tr><td></td><td>LED pin</td><td><input size='3' id='led' name='led' type='text'/></td><td>Only use when only a single LED is used</td></tr>
 					<tr><td></td><td>Red LED pin</td><td><input size='3' id='led_red' name='led_red' type='text'/></td></tr>
 					<tr><td></td><td>Red LED inverted</td><td><input size='3' id='led_red_invert' name='led_red_invert' type='checkbox'/></td></tr>
@@ -193,12 +193,12 @@
 					<tr><td></td><td>Fan PWM pin</td><td><input size='3' id='misc_fan_pwm' name='misc_fan_pwm' type='text'/></td></tr>
 					<tr><td></td><td>Fan TACHO pin</td><td><input size='3' id='misc_fan_tacho' name='misc_fan_tacho' type='text'/></td></tr>
 					<tr><td></td><td>Has STK8xxx G-sensor</td><td><input size='3' id='gsensor_stk8xxx' name='gsensor_stk8xxx' type='checkbox'/></td></tr>
-					<tr><td></td><td>G-sensor interrupt pin</td><td><input size='3' id='misc_gsensor_int' name='misc_gsensor_int' type='input'/></td></tr>
+					<tr><td></td><td>G-sensor interrupt pin</td><td><input size='3' id='misc_gsensor_int' name='misc_gsensor_int' type='text'/></td></tr>
 					<tr><td></td><td>Has LM75A Thermal sensor</td><td><input size='3' id='thermal_lm75a' name='thermal_lm75a' type='checkbox'/></td></tr>
 @@end
 @@if not isTX:
 					<tr><td colspan='2'><b>PWM</td></tr>
-					<tr><td></td><td>PWM output pins</td><td><input size='40' id='pwm_outputs' name='pwm_outputs' type='text'/></td></tr>
+					<tr><td></td><td>PWM output pins</td><td><input size='40' id='pwm_outputs' name='pwm_outputs' type='text' class='array'/></td></tr>
 
 					<tr><td colspan='2'><b>VBat</td></tr>
 					<tr><td></td><td>VBat pin</td><td><input size='3' id='vbat' name='vbat' type='text'/></td></tr>
@@ -210,8 +210,8 @@
 					<tr><td></td><td>RF amp VPD pin</td><td><input size='3' id='rf_amp_vpd' name='rf_amp_vpd' type='text'/></td></tr>
 					<tr><td></td><td>RF amp VREF pin</td><td><input size='3' id='rf_amp_vref' name='rf_amp_vref' type='text'/></td></tr>
 					<tr><td></td><td>SPI NSS pin</td><td><input size='3' id='spi_vtx_nss' name='spi_vtx_nss' type='checkbox'/></td></tr>
-					<tr><td></td><td>25mW VPD interpolation values</td><td><input size='20' id='vpd_25mW' name='vpd_25mW' type='input'/></td></tr>
-					<tr><td></td><td>25mW VPD interpolation values</td><td><input size='20' id='vpd_100mW' name='vpd_100mW' type='checkbox'/></td></tr>
+					<tr><td></td><td>25mW VPD interpolation values</td><td><input size='20' id='vpd_25mW' name='vpd_25mW' type='text' class='array'/></td></tr>
+					<tr><td></td><td>25mW VPD interpolation values</td><td><input size='20' id='vpd_100mW' name='vpd_100mW' type='text' class='array'/></td></tr>
 @@end
 				</table>
 				<input type='button' value='Save Target Configuration' class='mui-btn mui-btn--primary' onclick="submitHardwareSettings()"/>
