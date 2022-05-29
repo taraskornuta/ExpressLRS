@@ -68,27 +68,29 @@ static uint16_t currentRPM = 0;
 
 static void initialize()
 {
-    #if defined(HAS_THERMAL)
+#if defined(HAS_THERMAL)
     if (OPT_HAS_THERMAL_LM75A && GPIO_PIN_SCL != UNDEF_PIN && GPIO_PIN_SDA != UNDEF_PIN)
     {
         thermal.init();
     }
-    #endif
+#endif
     if (GPIO_PIN_FAN_EN != UNDEF_PIN)
     {
         pinMode(GPIO_PIN_FAN_EN, OUTPUT);
     }
+#if defined(PLATFORM_ESP32)
     else if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
     {
         ledcSetup(fanChannel, 25000, 8);
         ledcAttachPin(GPIO_PIN_FAN_PWM, fanChannel);
         ledcWrite(fanChannel, 0);
     }
-    if (GPIO_PIN_FAN_TACHO)
+    if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
     {
         pinMode(GPIO_PIN_FAN_TACHO, INPUT_PULLUP);
         attachInterrupt(GPIO_PIN_FAN_TACHO, [](){tachoPulses++;}, RISING);
     }
+#endif
 }
 
 #if defined(HAS_THERMAL)
@@ -97,7 +99,7 @@ static void timeoutThermal()
     if(OPT_HAS_THERMAL_LM75A && !IsArmed() && connectionState != wifiUpdate)
     {
         thermal.handle();
- #ifdef HAS_SMART_FAN
+#ifdef HAS_SMART_FAN
         if(is_smart_fan_control & !is_smart_fan_working){
             is_smart_fan_working = true;
             thermal.update_threshold(USER_SMARTFAN_OFF);
@@ -128,22 +130,29 @@ static void timeoutFan()
     {
         if (fanShouldBeOn)
         {
-            #if defined(GPIO_PIN_FAN_PWM)
-            static PowerLevels_e lastPower = MinPower;
-            if (POWERMGNT::currPower() < lastPower && fanStateDuration < FAN_MIN_CHANGETIME)
+#if defined(PLATFORM_ESP32)
+            if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
             {
-                ++fanStateDuration;
+                static PowerLevels_e lastPower = MinPower;
+                if (POWERMGNT::currPower() < lastPower && fanStateDuration < FAN_MIN_CHANGETIME)
+                {
+                    ++fanStateDuration;
+                }
+                if (POWERMGNT::currPower() > lastPower || (POWERMGNT::currPower() < lastPower && fanStateDuration >= FAN_MIN_CHANGETIME))
+                {
+                    ledcWrite(fanChannel, fanSpeeds[POWERMGNT::currPower()]);
+                    DBGLN("Fan speed: %d (power) -> %d (pwm)", POWERMGNT::currPower(), fanSpeeds[POWERMGNT::currPower()]);
+                    lastPower = POWERMGNT::currPower();
+                    fanStateDuration = 0; // reset the timeout
+                }
             }
-            if (POWERMGNT::currPower() > lastPower || (POWERMGNT::currPower() < lastPower && fanStateDuration >= FAN_MIN_CHANGETIME))
+            else
             {
-                ledcWrite(fanChannel, fanSpeeds[POWERMGNT::currPower()]);
-                DBGLN("Fan speed: %d (power) -> %d (pwm)", POWERMGNT::currPower(), fanSpeeds[POWERMGNT::currPower()]);
-                lastPower = POWERMGNT::currPower();
                 fanStateDuration = 0; // reset the timeout
             }
-            #else
+#else
             fanStateDuration = 0; // reset the timeout
-            #endif
+#endif
         }
         else if (fanStateDuration < firmwareOptions.fan_min_runtime)
         {
@@ -152,11 +161,16 @@ static void timeoutFan()
         else
         {
             // turn off expired
-            #if defined(GPIO_PIN_FAN_PWM)
-            ledcWrite(fanChannel, 0);
-            #else
-            digitalWrite(GPIO_PIN_FAN_EN, LOW);
-            #endif
+            if (GPIO_PIN_FAN_EN != UNDEF_PIN)
+            {
+                digitalWrite(GPIO_PIN_FAN_EN, LOW);
+            }
+#if defined(PLATFORM_ESP32)
+            else if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
+            {
+                ledcWrite(fanChannel, 0);
+            }
+#endif
             fanStateDuration = 0;
             fanIsOn = false;
         }
@@ -171,12 +185,17 @@ static void timeoutFan()
         }
         else
         {
-            #if defined(GPIO_PIN_FAN_PWM)
-            ledcWrite(fanChannel, fanSpeeds[POWERMGNT::currPower()]);
-            DBGLN("Fan speed: %d (power) -> %d (pwm)", POWERMGNT::currPower(), fanSpeeds[POWERMGNT::currPower()]);
-            #else
-            digitalWrite(GPIO_PIN_FAN_EN, HIGH);
-            #endif
+            if (GPIO_PIN_FAN_EN != UNDEF_PIN)
+            {
+                digitalWrite(GPIO_PIN_FAN_EN, HIGH);
+            }
+#if defined(PLATFORM_ESP32)
+            else if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
+            {
+                ledcWrite(fanChannel, fanSpeeds[POWERMGNT::currPower()]);
+                DBGLN("Fan speed: %d (power) -> %d (pwm)", POWERMGNT::currPower(), fanSpeeds[POWERMGNT::currPower()]);
+            }
+#endif
             fanStateDuration = 0;
             fanIsOn = true;
         }
@@ -188,16 +207,16 @@ uint16_t getCurrentRPM()
     return currentRPM;
 }
 
+#if defined(PLATFORM_ESP32)
 void timeoutTacho()
 {
-#if defined(GPIO_PIN_FAN_TACHO)
     uint16_t pulses = tachoPulses;
     tachoPulses = 0;
 
     currentRPM = pulses * (60000 / THERMAL_DURATION) / TACHO_PULSES_PER_REV;
     DBGLN("RPM %d", currentRPM);
-#endif
 }
+#endif
 
 static int event()
 {
@@ -229,11 +248,12 @@ static int timeout()
     {
         timeoutFan();
     }
+#if defined(PLATFORM_ESP32)
     if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
     {
         timeoutTacho();
     }
-
+#endif
     return THERMAL_DURATION;
 }
 
