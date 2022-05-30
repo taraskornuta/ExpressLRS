@@ -162,6 +162,7 @@
 // Misc sensors & things
 #define GPIO_PIN_GSENSOR_INT hardware_pin(HARDWARE_misc_gsensor_int)
 // #define GPIO_PIN_BUZZER hardware_pin(HARDWARE_misc_buzzer)  // stm32 only
+#define define HAS_FAN
 #define GPIO_PIN_FAN_EN hardware_pin(HARDWARE_misc_fan_en)
 #define GPIO_PIN_FAN_PWM hardware_pin(HARDWARE_misc_fan_pwm)
 #define GPIO_PIN_FAN_TACHO hardware_pin(HARDWARE_misc_fan_tacho)

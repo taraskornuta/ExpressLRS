@@ -50,7 +50,7 @@ uint8_t fanSpeeds[] = {
     255, // 1000mW
     255  // 2000mW
 };
-constexpr uint8_t fanChannel=0;
+constexpr uint8_t fanChannel = 0;
 #endif
 
 #if !defined(FAN_MIN_RUNTIME)
@@ -78,19 +78,6 @@ static void initialize()
     {
         pinMode(GPIO_PIN_FAN_EN, OUTPUT);
     }
-#if defined(PLATFORM_ESP32)
-    else if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
-    {
-        ledcSetup(fanChannel, 25000, 8);
-        ledcAttachPin(GPIO_PIN_FAN_PWM, fanChannel);
-        ledcWrite(fanChannel, 0);
-    }
-    if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
-    {
-        pinMode(GPIO_PIN_FAN_TACHO, INPUT_PULLUP);
-        attachInterrupt(GPIO_PIN_FAN_TACHO, [](){tachoPulses++;}, RISING);
-    }
-#endif
 }
 
 #if defined(HAS_THERMAL)
@@ -122,6 +109,7 @@ static void timeoutThermal()
  ***/
 static void timeoutFan()
 {
+#if defined(HAS_FAN)
     static uint8_t fanStateDuration;
     static bool fanIsOn;
     bool fanShouldBeOn = POWERMGNT::currPower() >= (PowerLevels_e)config.GetPowerFanThreshold();
@@ -200,6 +188,7 @@ static void timeoutFan()
             fanIsOn = true;
         }
     }
+#endif
 }
 
 uint16_t getCurrentRPM()
@@ -207,16 +196,34 @@ uint16_t getCurrentRPM()
     return currentRPM;
 }
 
-#if defined(PLATFORM_ESP32)
 void timeoutTacho()
 {
+#if defined(PLATFORM_ESP32)
     uint16_t pulses = tachoPulses;
     tachoPulses = 0;
 
     currentRPM = pulses * (60000 / THERMAL_DURATION) / TACHO_PULSES_PER_REV;
     DBGLN("RPM %d", currentRPM);
-}
 #endif
+}
+
+static int start()
+{
+#if defined(PLATFORM_ESP32)
+    if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
+    {
+        ledcSetup(fanChannel, 25000, 8);
+        ledcAttachPin(GPIO_PIN_FAN_PWM, fanChannel);
+        ledcWrite(fanChannel, 0);
+    }
+    if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
+    {
+        pinMode(GPIO_PIN_FAN_TACHO, INPUT_PULLUP);
+        attachInterrupt(GPIO_PIN_FAN_TACHO, [](){tachoPulses++;}, RISING);
+    }
+#endif
+    return DURATION_IMMEDIATELY;
+}
 
 static int event()
 {
@@ -233,7 +240,7 @@ static int event()
 #endif
     }
 #endif
-    return THERMAL_DURATION;
+    return DURATION_IGNORE;
 }
 
 static int timeout()
@@ -244,22 +251,14 @@ static int timeout()
         timeoutThermal();
     }
 #endif
-    if (GPIO_PIN_FAN_EN != UNDEF_PIN)
-    {
-        timeoutFan();
-    }
-#if defined(PLATFORM_ESP32)
-    if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
-    {
-        timeoutTacho();
-    }
-#endif
+    timeoutFan();
+    timeoutTacho();
     return THERMAL_DURATION;
 }
 
 device_t Thermal_device = {
     .initialize = initialize,
-    .start = nullptr,
+    .start = start,
     .event = event,
     .timeout = timeout
 };
