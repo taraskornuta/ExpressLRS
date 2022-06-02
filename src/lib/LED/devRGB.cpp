@@ -23,7 +23,9 @@
 #define WS2812_PIXEL_COUNT 1
 #endif
 constexpr uint8_t pixelCount = WS2812_PIXEL_COUNT;
+static uint8_t statusLEDcount = WS2812_PIXEL_COUNT;
 static uint8_t statusLEDs[] = { 0 };
+static uint8_t bootLEDcount = WS2812_PIXEL_COUNT;
 static uint8_t *bootLEDs = statusLEDs;
 #endif
 
@@ -37,8 +39,11 @@ static uint8_t *bootLEDs = statusLEDs;
 
 static uint8_t pixelCount;
 static uint8_t *statusLEDs;
+static uint8_t statusLEDcount;
 static uint8_t *vtxStatusLEDs;
+static uint8_t vtxLEDcount;
 static uint8_t *bootLEDs;
+static uint8_t bootLEDcount;
 
 #if defined(PLATFORM_ESP32)
     #define METHOD Neo800KbpsMethod
@@ -69,7 +74,7 @@ void WS281Binit()
 
 void WS281BsetLED(uint32_t color)
 {
-    for (int i=0 ; i<sizeof(statusLEDs) ; i++)
+    for (int i=0 ; i<statusLEDcount ; i++)
     {
         if (OPT_WS2812_IS_GRB)
         {
@@ -270,9 +275,9 @@ static int blinkyUpdate() {
     else
     {
         blinkyColor_t c = blinkyColor;
-        for (int i=0 ; i<sizeof(bootLEDs) ; i++)
+        for (int i=0 ; i<bootLEDcount ; i++)
         {
-            c.h += 16;//256/sizeof(bootLEDs);
+            c.h += 16;
             if (OPT_WS2812_IS_GRB)
             {
                 stripgrb->SetPixelColor(bootLEDs[i], RgbColor(HtmlColor(HsvToRgb(c))));
@@ -325,39 +330,41 @@ static void initialize()
     {
         #if defined(PLATFORM_ESP32) || defined(PLATFORM_ESP8266)
         pixelCount = 1;
-        int count = WS2812_STATUS_LEDS_COUNT;
-        if (count == 0)
+        statusLEDcount = WS2812_STATUS_LEDS_COUNT;
+        if (statusLEDcount == 0)
         {
             statusLEDs = new uint8_t[1];
             statusLEDs[0] = 0;
+            statusLEDcount = 1;
         }
         else
         {
-            statusLEDs = new uint8_t[count];
-            for (int i=0 ; i<count ; i++)
+            statusLEDs = new uint8_t[statusLEDcount];
+            for (int i=0 ; i<statusLEDcount ; i++)
             {
                 statusLEDs[i] = WS2812_STATUS_LEDS[i];
                 pixelCount = max((int)pixelCount, statusLEDs[i]+1);
             }
         }
 
-        count = WS2812_VTX_STATUS_LEDS_COUNT;
-        vtxStatusLEDs = new uint8_t[count];
-        for (int i=0 ; i<count ; i++)
+        vtxLEDcount = WS2812_VTX_STATUS_LEDS_COUNT;
+        vtxStatusLEDs = new uint8_t[vtxLEDcount];
+        for (int i=0 ; i<vtxLEDcount ; i++)
         {
             vtxStatusLEDs[i] = WS2812_VTX_STATUS_LEDS[i];
             pixelCount = max((int)pixelCount, vtxStatusLEDs[i]+1);
         }
 
-        count = WS2812_BOOT_LEDS_COUNT;
-        if (count == 0)
+        bootLEDcount = WS2812_BOOT_LEDS_COUNT;
+        if (bootLEDcount == 0)
         {
             bootLEDs = statusLEDs;
+            bootLEDcount = statusLEDcount;
         }
         else
         {
-            bootLEDs = new uint8_t[count];
-            for (int i=0 ; i<count ; i++)
+            bootLEDs = new uint8_t[bootLEDcount];
+            for (int i=0 ; i<bootLEDcount ; i++)
             {
                 bootLEDs[i] = WS2812_BOOT_LEDS[i];
                 pixelCount = max((int)pixelCount, bootLEDs[i]+1);
