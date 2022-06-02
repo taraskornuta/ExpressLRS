@@ -42,7 +42,7 @@ ICACHE_RAM_ATTR void handleGsensorInterrupt() {
 
 void Gsensor::init()
 {
-    uint8_t id = -1;
+    int id = -1;
     if (OPT_HAS_GSENSOR_STK8xxx)
         id = stk8xxx.STK8xxx_Initialization();
     else
