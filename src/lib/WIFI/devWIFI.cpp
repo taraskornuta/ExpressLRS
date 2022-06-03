@@ -35,6 +35,7 @@
 #include "options.h"
 #include "helpers.h"
 #include "devVTXSPI.h"
+#include "devButton.h"
 
 #include "WebContent.h"
 
@@ -583,7 +584,7 @@ static void WebUpdateGetFirmware(AsyncWebServerRequest *request) {
   request->send(response);
 }
 
-static void wifiOff()
+static void initialize()
 {
   wifiStarted = false;
   WiFi.disconnect(true);
@@ -591,6 +592,7 @@ static void wifiOff()
   #if defined(PLATFORM_ESP8266)
   WiFi.forceSleepBegin();
   #endif
+  registerButtonFunction("wifi", [](){ connectionState = wifiUpdate; });
 }
 
 static void startWiFi(unsigned long now)
@@ -904,7 +906,7 @@ static int timeout()
 }
 
 device_t WIFI_device = {
-  .initialize = wifiOff,
+  .initialize = initialize,
   .start = start,
   .event = event,
   .timeout = timeout

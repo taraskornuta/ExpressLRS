@@ -1278,6 +1278,15 @@ RF_PRE_INIT()
 }
 #endif
 
+void reboot()
+{
+#if defined(PLATFORM_STM32)
+    HAL_NVIC_SystemReset();
+#else
+    ESP.restart();
+#endif
+}
+
 void setup()
 {
     #if defined(TARGET_UNIFIED_RX)
@@ -1332,6 +1341,13 @@ void setup()
             hwTimer.init();
         }
     }
+
+    registerButtonFunction("bind", EnterBindingMode);
+    registerButtonFunction("reboot", reboot);
+
+    // default button actions
+    addButtonAction(1, true, 4, "wifi");
+    addButtonAction(1, true, 8, "reboot");
 
     devicesStart();
 }

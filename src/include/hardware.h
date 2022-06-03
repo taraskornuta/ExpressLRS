@@ -55,6 +55,7 @@ typedef enum {
     HARDWARE_five_way3,
 
     HARDWARE_button,
+    HARDWARE_button2,
 
     // Lighting
     HARDWARE_led,

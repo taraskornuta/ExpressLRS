@@ -5,6 +5,7 @@
 #include "POWERMGNT.h"
 #include "DAC.h"
 #include "helpers.h"
+#include "devButton.h"
 
 /*
  * Moves the power management values and special cases out of the main code and into `targets.h`.
@@ -178,6 +179,22 @@ void POWERMGNT::LoadCalibration()
 #endif
 }
 
+static void cyclePower()
+{
+    // Only change power if we are running normally
+    if (connectionState < MODE_STATES)
+    {
+        PowerLevels_e curr = POWERMGNT::currPower();
+        if (curr == POWERMGNT::getMaxPower())
+        {
+            POWERMGNT::setPower(POWERMGNT::getMinPower());
+        }
+        else
+        {
+            POWERMGNT::incPower();
+        }
+    }
+}
 
 void POWERMGNT::init()
 {
@@ -202,6 +219,9 @@ void POWERMGNT::init()
 #endif
     LoadCalibration();
     setDefaultPower();
+#if defined(TARGET_TX)
+    registerButtonFunction("inc-power", cyclePower);
+#endif
 }
 
 PowerLevels_e POWERMGNT::getDefaultPower()

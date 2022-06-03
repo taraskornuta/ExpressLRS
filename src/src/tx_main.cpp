@@ -1147,6 +1147,13 @@ void setup()
     }
   }
 
+  registerButtonFunction("bind", EnterBindingMode);
+
+  // default button actions
+  addButtonAction(1, false, 3, "bind");
+  addButtonAction(1, true, 0, "inc-power");
+  addButtonAction(2, false, 0, "send-vtx");
+
   devicesStart();
 }
 
