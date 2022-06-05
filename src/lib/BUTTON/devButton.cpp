@@ -54,7 +54,7 @@ static void handlePress(uint8_t button, bool longPress, uint8_t count)
     DBGLN("handle press");
     for (it = buttonActions.begin(); it != buttonActions.end(); ++it)
     {
-        if (it->button == button && it->longPress == longPress && (count == 0 || it->count == count))
+        if (it->button == button && it->longPress == longPress && (it->count == 0 || it->count == count))
         {
             if (actions[it->name])
             {

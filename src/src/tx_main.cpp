@@ -1150,9 +1150,10 @@ void setup()
   registerButtonFunction("bind", EnterBindingMode);
 
   // default button actions
-  addButtonAction(1, false, 3, "bind");
-  addButtonAction(1, true, 0, "inc-power");
-  addButtonAction(2, false, 0, "send-vtx");
+  addButtonAction(1, false, 3, "bind");         // tripple-click, send bind message
+  addButtonAction(1, true, 0, "inc-power");     // long-press, increment power level
+  addButtonAction(2, false, 2, "vtx-channel");  // double-click show VTX channel menu on OLED/TFT
+  addButtonAction(2, true, 0, "send-vtx");      // long-press, send current VTX settings
 
   devicesStart();
 }
