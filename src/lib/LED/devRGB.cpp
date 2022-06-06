@@ -72,6 +72,20 @@ void WS281Binit()
     }
 }
 
+void WS281BsetLED(int index, uint32_t color)
+{
+    if (OPT_WS2812_IS_GRB)
+    {
+        stripgrb->SetPixelColor(index, RgbColor(HtmlColor(color)));
+        stripgrb->Show();
+    }
+    else
+    {
+        striprgb->SetPixelColor(index, RgbColor(HtmlColor(color)));
+        striprgb->Show();
+    }
+}
+
 void WS281BsetLED(uint32_t color)
 {
     for (int i=0 ; i<statusLEDcount ; i++)
@@ -79,12 +93,10 @@ void WS281BsetLED(uint32_t color)
         if (OPT_WS2812_IS_GRB)
         {
             stripgrb->SetPixelColor(statusLEDs[i], RgbColor(HtmlColor(color)));
-            stripgrb->Show();
         }
         else
         {
             striprgb->SetPixelColor(statusLEDs[i], RgbColor(HtmlColor(color)));
-            striprgb->Show();
         }
     }
     if (OPT_WS2812_IS_GRB)
@@ -236,6 +248,20 @@ uint16_t flashLED(blinkyColor_t &blinkyColor, uint8_t onLightness, uint8_t offLi
     return durations[counter++] * 10;
 }
 
+static void setButtonColors()
+{
+    #if defined(PLATFORM_ESP32) && defined(TARGET_TX)
+    if (USER_BUTTON_LED != -1)
+    {
+        WS281BsetLED(USER_BUTTON_LED, firmwareOptions.button_colors[0]);
+    }
+    if (USER_BUTTON2_LED != -1)
+    {
+        WS281BsetLED(USER_BUTTON2_LED, firmwareOptions.button_colors[1]);
+    }
+    #endif
+}
+
 static enum {
     STARTUP = 0,
     NORMAL = 1
@@ -315,6 +341,7 @@ static int blinkyUpdate() {
                 }
             }
             #endif
+            setButtonColors();
             return NORMAL_UPDATE_INTERVAL;
         }
         blinkyColor.v -= lightnessStep;
@@ -389,6 +416,7 @@ static int start()
     // Only do the blinkies if it was NOT a software reboot
     if (esp_reset_reason() == ESP_RST_SW) {
         blinkyState = NORMAL;
+        setButtonColors();
         return NORMAL_UPDATE_INTERVAL;
     }
     #endif

@@ -368,6 +368,17 @@ bool options_init()
     firmwareOptions.fan_min_runtime = doc["fan-runtime"] | 30U;
     firmwareOptions.uart_inverted = doc["uart-inverted"] | true;
     firmwareOptions.unlock_higher_power = doc["unlock-higher-power"] | false;
+    #if defined(PLATFORM_ESP32)
+    if (doc["button-colors"].is<JsonArray>())
+    {
+        copyArray(doc["button-colors"], firmwareOptions.button_colors, ARRAY_SIZE(firmwareOptions.button_colors));
+    }
+    else
+    {
+        firmwareOptions.button_colors[0] = USER_BUTTON_LED == -1 ? -1 : 0;
+        firmwareOptions.button_colors[1] = USER_BUTTON2_LED == -1 ? -1 : 0;
+    }
+    #endif
     #else
     firmwareOptions.uart_baud = doc["rcvr-uart-baud"] | 420000;
     firmwareOptions.invert_tx = doc["rcvr-invert-tx"] | false;
@@ -400,6 +411,13 @@ void saveOptions()
     doc["fan-runtime"] = firmwareOptions.fan_min_runtime;
     doc["uart-inverted"] = firmwareOptions.uart_inverted;
     doc["unlock-higher-power"] = firmwareOptions.unlock_higher_power;
+    #if defined(PLATFORM_ESP32)
+    if (doc["button-colors"].is<JsonArray>())
+    {
+        JsonArray colors = doc.createNestedArray("button-colors");
+        copyArray(firmwareOptions.button_colors, sizeof(firmwareOptions.button_colors), colors);
+    }
+    #endif
     #else
     doc["rcvr-uart-baud"] = firmwareOptions.uart_baud;
     doc["rcvr-invert-tx"] = firmwareOptions.invert_tx;

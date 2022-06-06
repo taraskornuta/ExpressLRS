@@ -134,12 +134,17 @@ function initNetwork() {
       scanTimer = setInterval(getNetworks, 2000);
     }
   };
-  xmlhttp.open('POST', 'mode.json', true);
+  xmlhttp.open('GET', 'mode.json', true);
   xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
   xmlhttp.send();
 }
 
 function initOptions() {
+  function color(x) {
+    v = x.toString(16);
+    return "#" + ("000000" + v).substring(v.length)
+  }
+
   initBindingPhraseGen();
   const xmlhttp = new XMLHttpRequest();
   xmlhttp.onreadystatechange = function() {
@@ -149,6 +154,10 @@ function initOptions() {
       if (data['wifi-ssid']) _('homenet').textContent = data['wifi-ssid'];
       else _('connect').style.display = 'none';
       if (data['customised']) _('reset-options').style.display = 'block';
+      if (data['button-colors'][0] === -1) _('button1-color-div').style.display = 'none';
+      else  _('button1-color').value = color(data['button-colors'][0]);
+      if (data['button-colors'][1] === -1) _('button2-color-div').style.display = 'none';
+      else  _('button2-color').value = color(data['button-colors'][1]);
       initNetwork();
     }
   };
@@ -169,7 +178,7 @@ function getNetworks() {
       }
     }
   };
-  xmlhttp.open('POST', 'networks.json', true);
+  xmlhttp.open('GET', 'networks.json', true);
   xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
   xmlhttp.send();
 }
@@ -359,8 +368,20 @@ function submitOptions(e) {
   xhr.open('POST', '/options.json');
   xhr.setRequestHeader('Content-Type', 'application/json');
   const formData = new FormData(_('upload_options'));
-  xhr.send(JSON.stringify(Object.fromEntries(formData), function(k, v) {
+
+  let data = Object.fromEntries(formData);
+  data['button-colors'] = [];
+  for (const [k, v] of Object.entries(data)) {
+    if (_(k) && _(k).type == 'color') {
+      const index = parseInt(k.substring('6')) - 1;
+      if(_(k + "-div").style.display === 'none') data['button-colors'][index] = -1;
+      else data['button-colors'][index] = parseInt(v.substring(1), 16);
+    }
+  }
+
+  xhr.send(JSON.stringify(data, function(k, v) {
     if (v === '') return undefined;
+    if (_(k) && _(k).type == 'color') return undefined;
     if (_(k) && _(k).type == 'checkbox') {
       return v == 'on' ? true : false;
     }
@@ -372,6 +393,7 @@ function submitOptions(e) {
     }
     return isNaN(v) ? v : +v;
   }));
+
   xhr.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       cuteAlert({

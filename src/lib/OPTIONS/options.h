@@ -48,6 +48,9 @@ typedef struct _options {
     uint8_t     buzzer_mode;            // 0 = disable all, 1 = beep once, 2 = disable startup beep, 3 = default tune, 4 = custom tune
     uint16_t    buzzer_melody[32][2];
 #endif
+#if defined(PLATFORM_ESP32)
+    int32_t    button_colors[2];
+#endif
 #endif
 } __attribute__((packed)) firmware_options_t;
 
