@@ -248,7 +248,7 @@ uint16_t flashLED(blinkyColor_t &blinkyColor, uint8_t onLightness, uint8_t offLi
     return durations[counter++] * 10;
 }
 
-static void setButtonColors()
+void setButtonColors()
 {
     #if defined(PLATFORM_ESP32) && defined(TARGET_TX)
     if (USER_BUTTON_LED != -1)

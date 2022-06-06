@@ -272,6 +272,48 @@ uint32_t myGetSketchSize()
 #endif
 
 static String builtinOptions;
+
+void serializeOptions()
+{
+    DynamicJsonDocument doc(1024);
+
+    if (firmwareOptions.hasUID)
+    {
+        JsonArray uid = doc.createNestedArray("uid");
+        copyArray(firmwareOptions.uid, sizeof(firmwareOptions.uid), uid);
+    }
+    doc["wifi-on-interval"] = firmwareOptions.wifi_auto_on_interval / 1000;
+    if (firmwareOptions.home_wifi_ssid[0])
+    {
+        doc["wifi-ssid"] = firmwareOptions.home_wifi_ssid;
+        doc["wifi-password"] = firmwareOptions.home_wifi_password;
+    }
+    #if defined(TARGET_UNIFIED_TX)
+    doc["tlm-interval"] = firmwareOptions.tlm_report_interval;
+    doc["fan-runtime"] = firmwareOptions.fan_min_runtime;
+    doc["uart-inverted"] = firmwareOptions.uart_inverted;
+    doc["unlock-higher-power"] = firmwareOptions.unlock_higher_power;
+    #if defined(PLATFORM_ESP32)
+    JsonArray colors = doc.createNestedArray("button-colors");
+    copyArray(firmwareOptions.button_colors, ARRAY_SIZE(firmwareOptions.button_colors), colors);
+    #endif
+    #else
+    doc["rcvr-uart-baud"] = firmwareOptions.uart_baud;
+    doc["rcvr-invert-tx"] = firmwareOptions.invert_tx;
+    doc["lock-on-first-connection"] = firmwareOptions.lock_on_first_connection;
+    #endif
+    doc["domain"] = firmwareOptions.domain;
+
+    serializeJson(doc, builtinOptions);
+}
+
+void saveOptions()
+{
+    File options = SPIFFS.open("/options.json", "w");
+    options.print(builtinOptions);
+    options.close();
+}
+
 String& getOptions()
 {
     File file = SPIFFS.open("/options.json", "r");
@@ -285,6 +327,7 @@ String& getOptions()
         return builtinOptions;
     }
     builtinOptions = file.readString();
+    file.close();
     return builtinOptions;
 }
 
@@ -339,7 +382,6 @@ bool options_init()
         {
             return false;
         }
-        serializeJson(doc, builtinOptions);
     }
     else
     {
@@ -372,6 +414,8 @@ bool options_init()
     if (doc["button-colors"].is<JsonArray>())
     {
         copyArray(doc["button-colors"], firmwareOptions.button_colors, ARRAY_SIZE(firmwareOptions.button_colors));
+        if (USER_BUTTON_LED == -1) firmwareOptions.button_colors[0] = -1;
+        if (USER_BUTTON2_LED == -1) firmwareOptions.button_colors[1] = -1;
     }
     else
     {
@@ -386,48 +430,11 @@ bool options_init()
     #endif
     firmwareOptions.domain = doc["domain"] | 0;
 
+    serializeOptions();
+
     debugFreeInitLogger();
 
     return hardware_inited;
-}
-
-void saveOptions()
-{
-    DynamicJsonDocument doc(1024);
-
-    if (firmwareOptions.hasUID)
-    {
-        JsonArray uid = doc.createNestedArray("uid");
-        copyArray(firmwareOptions.uid, sizeof(firmwareOptions.uid), uid);
-    }
-    doc["wifi-on-interval"] = firmwareOptions.wifi_auto_on_interval / 1000;
-    if (firmwareOptions.home_wifi_ssid[0])
-    {
-        doc["wifi-ssid"] = firmwareOptions.home_wifi_ssid;
-        doc["wifi-password"] = firmwareOptions.home_wifi_password;
-    }
-    #if defined(TARGET_UNIFIED_TX)
-    doc["tlm-interval"] = firmwareOptions.tlm_report_interval;
-    doc["fan-runtime"] = firmwareOptions.fan_min_runtime;
-    doc["uart-inverted"] = firmwareOptions.uart_inverted;
-    doc["unlock-higher-power"] = firmwareOptions.unlock_higher_power;
-    #if defined(PLATFORM_ESP32)
-    if (doc["button-colors"].is<JsonArray>())
-    {
-        JsonArray colors = doc.createNestedArray("button-colors");
-        copyArray(firmwareOptions.button_colors, sizeof(firmwareOptions.button_colors), colors);
-    }
-    #endif
-    #else
-    doc["rcvr-uart-baud"] = firmwareOptions.uart_baud;
-    doc["rcvr-invert-tx"] = firmwareOptions.invert_tx;
-    doc["lock-on-first-connection"] = firmwareOptions.lock_on_first_connection;
-    #endif
-    doc["domain"] = firmwareOptions.domain;
-
-    File options = SPIFFS.open("/options.json", "w");
-    serializeJson(doc, options);
-    options.close();
 }
 
 #endif

@@ -104,7 +104,27 @@ function init() {
     }
   };
 
+  _('button1-color').oninput = sendCurrentColors;
+  _('button2-color').oninput = sendCurrentColors;
+
   initOptions();
+}
+
+function sendCurrentColors() {
+  const formData = new FormData(_('upload_options'));
+  let data = Object.fromEntries(formData);
+  colors = [];
+  for (const [k, v] of Object.entries(data)) {
+    if (_(k) && _(k).type == 'color') {
+      const index = parseInt(k.substring('6')) - 1;
+      if(_(k + "-div").style.display === 'none') colors[index] = -1;
+      else colors[index] = parseInt(v.substring(1), 16);
+    }
+  }
+  const xmlhttp = new XMLHttpRequest();
+  xmlhttp.open('POST', '/buttons', true);
+  xmlhttp.setRequestHeader('Content-type', 'application/json');
+  xmlhttp.send(JSON.stringify(colors));
 }
 
 function initNetwork() {

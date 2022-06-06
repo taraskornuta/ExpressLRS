@@ -26,6 +26,8 @@
 #include <StreamString.h>
 
 #include <ESPAsyncWebServer.h>
+#include "AsyncJson.h"
+#include "ArduinoJson.h"
 
 #include "common.h"
 #include "POWERMGNT.h"
@@ -42,6 +44,7 @@
 #include "config.h"
 #if defined(TARGET_TX)
 extern TxConfig config;
+extern void setButtonColors();
 #else
 extern RxConfig config;
 #endif
@@ -577,11 +580,25 @@ static size_t getFirmwareChunk(uint8_t *data, size_t len, size_t pos)
   return len;
 }
 
-static void WebUpdateGetFirmware(AsyncWebServerRequest *request) {
+static void WebUpdateGetFirmware(AsyncWebServerRequest *request)
+{
   AsyncWebServerResponse *response = request->beginResponse("application/octet-stream", (size_t)ESP.getSketchSize(), &getFirmwareChunk);
   String filename = String("attachment; filename=\"") + (const char *)&target_name[4] + "_" + VERSION + ".bin\"";
   response->addHeader("Content-Disposition", filename);
   request->send(response);
+}
+
+static void WebUpdateButtonColors(AsyncWebServerRequest *request, JsonVariant &json)
+{
+#if defined(TARGET_TX)
+  int b1 = json[0].as<int>();
+  int b2 = json[1].as<int>();
+  DBGLN("%d %d", b1, b2);
+  firmwareOptions.button_colors[0] = b1;
+  firmwareOptions.button_colors[1] = b2;
+  setButtonColors();
+#endif
+  request->send(200);
 }
 
 static void initialize()
@@ -729,6 +746,8 @@ static void startServices()
     server.on("/options.json", getFile).onBody(putFile);
     server.on("/reboot", HandleReboot);
     server.on("/reset", HandleReset);
+    AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/buttons", WebUpdateButtonColors);
+    server.addHandler(handler);
   #endif
 
   server.onNotFound(WebUpdateHandleNotFound);
