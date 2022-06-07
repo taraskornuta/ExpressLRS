@@ -158,6 +158,14 @@ body, input, select, textarea {
 	animation: open-frame 0.3s linear;
   }
 
+  .dialog-header {
+	display: flex;
+	flex-direction: row;
+	height: 35px;
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+  }
+
   .alert-header {
 	display: flex;
 	flex-direction: row;
@@ -227,6 +235,14 @@ body, input, select, textarea {
 	display: flex;
 	flex-direction: column;
 	text-align: center;
+    font-family: "Source Sans Pro", Helvetica, sans-serif;
+  }
+
+  .dialog-body {
+	padding: 30px 30px;
+	display: flex;
+	flex-direction: column;
+	/* text-align: center; */
     font-family: "Source Sans Pro", Helvetica, sans-serif;
   }
 

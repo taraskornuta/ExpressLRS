@@ -275,7 +275,7 @@ static void GetConfiguration(AsyncWebServerRequest *request)
   i = 0;
   for (std::map<const char *, std::function<void()>>::const_iterator it = funcs.begin() ; it != funcs.end() ; ++it, ++i)
   {
-    json["button-funcs"][i] = it->first;
+    json["button-functions"][i] = it->first;
   }
 
   json["config"]["ssid"] = station_ssid;
@@ -585,7 +585,7 @@ static void WebUpdateGetFirmware(AsyncWebServerRequest *request)
 
 static void WebUpdateButtonColors(AsyncWebServerRequest *request, JsonVariant &json)
 {
-#if defined(TARGET_TX)
+#if defined(TARGET_TX) && defined(PLATFORM_ESP32)
   int b1 = json[0].as<int>();
   int b2 = json[1].as<int>();
   DBGLN("%d %d", b1, b2);

@@ -2,6 +2,76 @@
 /* eslint-disable comma-dangle */
 /* eslint-disable require-jsdoc */
 
+// eslint-disable-next-line no-unused-vars
+function cuteDialog({
+  title,
+  dialogBody,
+  confirm,
+  confirmText = 'OK',
+  cancelText = 'Cancel',
+  closeStyle,
+}) {
+  return new Promise((resolve) => {
+    setInterval(() => {}, 5000);
+    const body = document.querySelector('body');
+
+    let closeStyleTemplate = 'alert-close';
+    if (closeStyle === 'circle') {
+      closeStyleTemplate = 'alert-close-circle';
+    }
+
+    const btnTemplate =`
+<div class="question-buttons">
+  <button class="confirm-button error-bg error-btn mui-btn mui-btn--danger">${confirmText}</button>
+  <button class="cancel-button question-bg question-btn mui-btn">${cancelText}</button>
+</div>
+`;
+
+    const template = `
+<div class="alert-wrapper">
+  <div class="alert-frame">
+    <div class="dialog-header question-bg">
+      <span class="${closeStyleTemplate}">X</span>
+    </div>
+    <div class="dialog-body">
+      ${dialogBody}
+      ${btnTemplate}
+    </div>
+  </div>
+</div>
+`;
+
+    body.insertAdjacentHTML('afterend', template);
+
+    const alertWrapper = document.querySelector('.alert-wrapper');
+    const alertFrame = document.querySelector('.alert-frame');
+    const alertClose = document.querySelector(`.${closeStyleTemplate}`);
+
+    function resolveIt() {
+      resolve();
+      alertWrapper.remove();
+    }
+    function confirmIt() {
+      confirm();
+      resolve('confirm');
+      alertWrapper.remove();
+    }
+    function stopProp(e) {
+      e.stopPropagation();
+    }
+
+    const confirmButton = document.querySelector('.confirm-button');
+    const cancelButton = document.querySelector('.cancel-button');
+
+    confirmButton.addEventListener('click', confirmIt);
+    cancelButton.addEventListener('click', resolveIt);
+
+    alertClose.addEventListener('click', resolveIt);
+    alertWrapper.addEventListener('click', resolveIt);
+    alertFrame.addEventListener('click', stopProp);
+  });
+}
+
 // =========================================================
 
 // Alert box design by Igor Ferrão de Souza: https://www.linkedin.com/in/igor-ferr%C3%A3o-de-souza-4122407b/

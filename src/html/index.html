@@ -79,6 +79,12 @@
 							<input id='unlock-higher-power' name='unlock-higher-power' type='checkbox'/>
 							<label>Unlock higher power</label>
 						</div>
+						<div class="mui-divider"></div>
+						<table class="mui-table mui-table--bordered">
+							<thead><tr><th width="15%">Button</th><th width="35%">When</th><th width="35%">Action</th><th width="15%"></th></tr></thead>
+							<tbody id="button-actions"></tbody>
+							<tfoot><tr><td colspan="4"><div class="mui--text-right"><button id='add-action' class="mui-btn">Add Action</button></div></td></tr></tfoot>
+						</table>
 						<div id="button1-color-div" class="mui-checkbox">
 							<input id='button1-color' name='button1-color' type='color'/>
 							<label>User button 1 color</label>
@@ -87,10 +93,6 @@
 							<input id='button2-color' name='button2-color' type='color'/>
 							<label>User button 2 color</label>
 						</div>
-						<table class="mui-table mui-table--bordered">
-							<thead><tr><th>Button</th><th>When</th><th>Action</th></tr></thead>
-							<tbody></tbody>
-						</table>
 @@else:
 						<div class="mui-textfield">
 							<input size='7' id='rcvr-uart-baud' name='rcvr-uart-baud' type='text'/>
@@ -105,7 +107,7 @@
 							<label>Lock on first conenction</label>
 						</div>
 @@end
-						<input id='submit-options' type='button' value='Save & Reboot' class="mui-btn mui-btn--primary">
+						<button id='submit-options' class="mui-btn mui-btn--primary">Save & Reboot</button>
 					</form>
 				</div>
 				<div class="mui-panel">
@@ -123,7 +125,7 @@
 					<form id='upload_form' method='POST' enctype='multipart/form-data'>
 						<div class="group">
 							<input id='firmware_file' type='file' name='update'>
-							<input type='submit' value='Update' class="mui-btn mui-btn--primary">
+							<button type='submit' class="mui-btn mui-btn--primary">Update</button>
 						</div>
 						<br/>
 						<h3 id="status"></h3>
@@ -147,7 +149,7 @@
 							<input id='modelid' type='text' name='modelid' value="255" required/>
 							<label>Model ID</label>
 						</div>
-						<input type='submit' value='Save' class="mui-btn mui-btn--primary">
+						<button type='submit' class="mui-btn mui-btn--primary">Save</button>
 					</form>
 				</div>
 				<div id="pwm_tab" class="mui-panel">

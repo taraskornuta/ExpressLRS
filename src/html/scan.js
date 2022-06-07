@@ -1,3 +1,5 @@
+@@require(isTX)
+
 /* eslint-disable comma-dangle */
 /* eslint-disable max-len */
 /* eslint-disable require-jsdoc */
@@ -5,6 +7,7 @@
 document.addEventListener('DOMContentLoaded', init, false);
 let scanTimer = undefined;
 let storedModelId = 255;
+let buttonActions = '';
 
 function _(el) {
   return document.getElementById(el);
@@ -72,7 +75,7 @@ function updatePwmSettings(arPwm) {
             <td><div class="mui-checkbox mui--text-center"><input type="checkbox" id="pwm_${index}_nar"${(narrow) ? ' checked' : ''}></div></td>
             <td><div class="mui-textfield"><input id="pwm_${index}_fs" value="${failsafe}" size="6"/></div></td></tr>`);
   });
-  htmlFields.push('</table></div><input type="submit" class="mui-btn mui-btn--primary" value="Set PWM Output">');
+  htmlFields.push('</table></div><button type="submit" class="mui-btn mui-btn--primary">Set PWM Output</button>');
 
   const grp = document.createElement('DIV');
   grp.setAttribute('class', 'group');
@@ -103,21 +106,19 @@ function init() {
       _('modelid').value = '255';
     }
   };
-
-  _('button1-color').oninput = sendCurrentColors;
-  _('button2-color').oninput = sendCurrentColors;
-
+  if (_('button1-color')) _('button1-color').oninput = sendCurrentColors;
+  if (_('button2-color')) _('button2-color').oninput = sendCurrentColors;
   initOptions();
 }
 
 function sendCurrentColors() {
   const formData = new FormData(_('upload_options'));
-  let data = Object.fromEntries(formData);
+  const data = Object.fromEntries(formData);
   colors = [];
   for (const [k, v] of Object.entries(data)) {
     if (_(k) && _(k).type == 'color') {
       const index = parseInt(k.substring('6')) - 1;
-      if(_(k + "-div").style.display === 'none') colors[index] = -1;
+      if (_(k + '-div').style.display === 'none') colors[index] = -1;
       else colors[index] = parseInt(v.substring(1), 16);
     }
   }
@@ -157,6 +158,12 @@ function initOptions() {
       const data = JSON.parse(this.responseText);
       updateOptions(data['options']);
       updateConfig(data['config']);
+
+      buttonActions = '';
+      for (const [, v] of Object.entries(data['button-functions'])) {
+        buttonActions = buttonActions + `<option value='${v}'>${v}</option>`;
+      }
+
       scanTimer = setInterval(getNetworks, 2000);
     }
   };
@@ -367,15 +374,20 @@ function submitOptions(e) {
   xhr.open('POST', '/options.json');
   xhr.setRequestHeader('Content-Type', 'application/json');
   const formData = new FormData(_('upload_options'));
+  const data = Object.fromEntries(formData);
 
-  let data = Object.fromEntries(formData);
   data['button-colors'] = [];
   for (const [k, v] of Object.entries(data)) {
     if (_(k) && _(k).type == 'color') {
       const index = parseInt(k.substring('6')) - 1;
-      if(_(k + "-div").style.display === 'none') data['button-colors'][index] = -1;
+      if (_(k + '-div').style.display === 'none') data['button-colors'][index] = -1;
       else data['button-colors'][index] = parseInt(v.substring(1), 16);
     }
+  }
+
+  data['button-actions'] = [];
+  for (const [, v] of Object.entries(rowdata)) {
+    data['button-actions'].push(v);
   }
 
   xhr.send(JSON.stringify(data, function(k, v) {
@@ -390,6 +402,7 @@ function submitOptions(e) {
       });
       return arr.length == 0 ? undefined : arr;
     }
+    if (typeof v === 'boolean') return v;
     return isNaN(v) ? v : +v;
   }));
 
@@ -419,7 +432,7 @@ _('submit-options').addEventListener('click', submitOptions);
 function updateOptions(data) {
   function color(x) {
     v = x.toString(16);
-    return "#" + ("000000" + v).substring(v.length)
+    return '#' + ('000000' + v).substring(v.length);
   }
   for (const [key, value] of Object.entries(data)) {
     if (_(key)) {
@@ -434,11 +447,122 @@ function updateOptions(data) {
   if (data['wifi-ssid']) _('homenet').textContent = data['wifi-ssid'];
   else _('connect').style.display = 'none';
   if (data['customised']) _('reset-options').style.display = 'block';
+@@if isTX:
   if (data['button-colors'][0] === -1) _('button1-color-div').style.display = 'none';
-  else  _('button1-color').value = color(data['button-colors'][0]);
+  else _('button1-color').value = color(data['button-colors'][0]);
   if (data['button-colors'][1] === -1) _('button2-color-div').style.display = 'none';
-  else  _('button2-color').value = color(data['button-colors'][1]);
+  else _('button2-color').value = color(data['button-colors'][1]);
+
+  updateButtons(data['button-actions']);
+@@end
 }
+
+@@if isTX:
+let rowcounter = 1;
+const rowdata = {};
+function updateButtons(data) {
+  row = 0;
+  for (const [, v] of Object.entries(data)) {
+    appendRow(v);
+  }
+
+  _('add-action').onclick = addAction;
+}
+
+function appendRow(v) {
+  const row = _('button-actions').insertRow();
+  row.id = 'row' + rowcounter;
+  rowdata[row.id] = v;
+  row.insertCell().textContent = v.button;
+  let when = '';
+  if (v['is-long-press'] == true) {
+    when = 'Long Press';
+    if (v.count > 1) {
+      when = when + ' for ' + v.count/2 + ' seconds';
+    }
+  } else {
+    when = 'Click';
+    if (v.count > 1) when = when + ' ' + v.count + ' times';
+  }
+  row.insertCell().textContent = when;
+  row.insertCell().textContent = v.action;
+  row.insertCell().innerHTML = `<button class="mui-btn" onclick="deleteAction('row${rowcounter}');">Delete</button>`;
+  row.setAttribute('data-json', JSON.stringify(v));
+  rowcounter++;
+}
+
+// eslint-disable-next-line no-unused-vars
+function deleteAction(rowid) {
+  const row = document.getElementById(rowid);
+  row.parentNode.removeChild(row);
+  delete rowdata[rowid];
+}
+
+function addAction(e) {
+  e.preventDefault();
+  cuteDialog({
+    title: 'Add Button Action',
+    dialogBody: `
+<div>
+  <div class="mui-select">
+    <select id="select-button">
+      <option value='' disabled selected hidden></option>
+      <option value='1'>1</option>
+      <option value='2'>2</option>
+    </select>
+    <label>Button</label>
+  </div>
+  <div class="mui-select">
+    <select id='select-press'>
+      <option value='' disabled selected hidden></option>
+      <option value=false>Short</option>
+      <option value=true>Long</option>
+    </select>
+    <label>Press</label>
+  </div>
+  <div class="mui-select">
+    <select id='select-count'>
+      <option value='' disabled selected hidden></option>
+      <option value='0'>0</option>
+      <option value='1'>1</option>
+      <option value='2'>2</option>
+      <option value='3'>3</option>
+      <option value='4'>4</option>
+      <option value='5'>5</option>
+      <option value='6'>6</option>
+      <option value='7'>7</option>
+      <option value='8'>8</option>
+    </select>
+    <label>Count</label>
+  </div>
+  <div class="mui-select">
+    <select id='select-action'>
+      <option value='' disabled selected hidden></option>
+      ${buttonActions}
+    </select>
+    <label>Action</label>
+  </div>
+</div>
+    `,
+    confirm: () => {
+      if (_('select-button').value === '' || _('select-press').value === '' || _('select-count').value === '' || _('select-action').value === '') {
+        cuteAlert({
+          type: 'error',
+          title: 'Error adding action',
+          message: 'You must select a value for every field!'
+        });
+      } else {
+        appendRow({
+          'button': parseInt(_('select-button').value),
+          'is-long-press': _('select-press').value == 'true' ? true : false,
+          'count': parseInt(_('select-count').value),
+          'action': _('select-action').value,
+        });
+      }
+    }
+  });
+}
+@@end
 
 md5 = function() {
   const k = [];
