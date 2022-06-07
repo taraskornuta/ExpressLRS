@@ -127,62 +127,41 @@ function sendCurrentColors() {
   xmlhttp.send(JSON.stringify(colors));
 }
 
-function initNetwork() {
-  const xmlhttp = new XMLHttpRequest();
-  xmlhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      const data = JSON.parse(this.responseText);
-      if (data.mode==='STA') {
-        _('stamode').style.display = 'block';
-        _('ssid').textContent = data.ssid;
-      } else {
-        _('apmode').style.display = 'block';
-      }
-      if (data.hasOwnProperty('modelid') && data.modelid != 255) {
-        _('modelid').style.display = 'block';
-        _('model-match').checked = true;
-        storedModelId = data.modelid;
-      } else {
-        _('modelid').style.display = 'none';
-        _('model-match').checked = false;
-        storedModelId = 255;
-      }
-      _('modelid').value = storedModelId;
-      if (data.product_name) _('product_name').textContent = data.product_name;
-      if (data.reg_domain) _('reg_domain').textContent = data.reg_domain;
-      updatePwmSettings(data.pwm);
-      scanTimer = setInterval(getNetworks, 2000);
-    }
-  };
-  xmlhttp.open('GET', 'mode.json', true);
-  xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-  xmlhttp.send();
+function updateConfig(data) {
+  if (data.mode==='STA') {
+    _('stamode').style.display = 'block';
+    _('ssid').textContent = data.ssid;
+  } else {
+    _('apmode').style.display = 'block';
+  }
+  if (data.hasOwnProperty('modelid') && data.modelid != 255) {
+    _('modelid').style.display = 'block';
+    _('model-match').checked = true;
+    storedModelId = data.modelid;
+  } else {
+    _('modelid').style.display = 'none';
+    _('model-match').checked = false;
+    storedModelId = 255;
+  }
+  _('modelid').value = storedModelId;
+  if (data.product_name) _('product_name').textContent = data.product_name;
+  if (data.reg_domain) _('reg_domain').textContent = data.reg_domain;
+  updatePwmSettings(data.pwm);
 }
 
 function initOptions() {
-  function color(x) {
-    v = x.toString(16);
-    return "#" + ("000000" + v).substring(v.length)
-  }
-
   initBindingPhraseGen();
   const xmlhttp = new XMLHttpRequest();
   xmlhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       const data = JSON.parse(this.responseText);
-      updateOptions(data);
-      if (data['wifi-ssid']) _('homenet').textContent = data['wifi-ssid'];
-      else _('connect').style.display = 'none';
-      if (data['customised']) _('reset-options').style.display = 'block';
-      if (data['button-colors'][0] === -1) _('button1-color-div').style.display = 'none';
-      else  _('button1-color').value = color(data['button-colors'][0]);
-      if (data['button-colors'][1] === -1) _('button2-color-div').style.display = 'none';
-      else  _('button2-color').value = color(data['button-colors'][1]);
-      initNetwork();
+      updateOptions(data['options']);
+      updateConfig(data['config']);
+      scanTimer = setInterval(getNetworks, 2000);
     }
   };
-  xmlhttp.open('GET', '/options.json', true);
-  xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  xmlhttp.open('GET', '/config', true);
+  xmlhttp.setRequestHeader('Content-type', 'application/json');
   xmlhttp.send();
 }
 
@@ -438,6 +417,10 @@ function submitOptions(e) {
 _('submit-options').addEventListener('click', submitOptions);
 
 function updateOptions(data) {
+  function color(x) {
+    v = x.toString(16);
+    return "#" + ("000000" + v).substring(v.length)
+  }
   for (const [key, value] of Object.entries(data)) {
     if (_(key)) {
       if (_(key).type == 'checkbox') {
@@ -448,6 +431,13 @@ function updateOptions(data) {
       }
     }
   }
+  if (data['wifi-ssid']) _('homenet').textContent = data['wifi-ssid'];
+  else _('connect').style.display = 'none';
+  if (data['customised']) _('reset-options').style.display = 'block';
+  if (data['button-colors'][0] === -1) _('button1-color-div').style.display = 'none';
+  else  _('button1-color').value = color(data['button-colors'][0]);
+  if (data['button-colors'][1] === -1) _('button2-color-div').style.display = 'none';
+  else  _('button2-color').value = color(data['button-colors'][1]);
 }
 
 md5 = function() {

@@ -6,6 +6,7 @@
 #include "logging.h"
 #include "button.h"
 #include "config.h"
+#include "devButton.h"
 
 #include <map>
 #include <list>
@@ -27,20 +28,17 @@ static Button button2;
 
 static std::map<const char *, std::function<void()>> actions;
 
-typedef struct action {
-    uint8_t button;
-    bool longPress;
-    uint8_t count;
-    const char *name;
-} action_t;
-
 static std::list<action_t> buttonActions;
+
+const std::list<action_t> &getButtonActions()
+{
+    return buttonActions;
+}
 
 void registerButtonFunction(const char *name, std::function<void()> function)
 {
     actions[name] = function;
 }
-
 
 void addButtonAction(uint8_t button, bool longPress, uint8_t count, const char *name)
 {

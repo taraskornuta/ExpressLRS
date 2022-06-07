@@ -2,13 +2,11 @@
 
 #if defined(PLATFORM_ESP8266) || defined(PLATFORM_ESP32)
 
-#if defined(TARGET_UNIFIED_TX) || defined(TARGET_UNIFIED_RX)
 #include <ArduinoJson.h>
 #if defined(PLATFORM_ESP8266)
 #include <FS.h>
 #else
 #include <SPIFFS.h>
-#endif
 #endif
 
 #if defined(PLATFORM_ESP32)
@@ -135,10 +133,8 @@ static struct {
   {"/scan.js", "text/javascript", (uint8_t *)SCAN_JS, sizeof(SCAN_JS)},
   {"/mui.js", "text/javascript", (uint8_t *)MUI_JS, sizeof(MUI_JS)},
   {"/elrs.css", "text/css", (uint8_t *)ELRS_CSS, sizeof(ELRS_CSS)},
-#if defined(TARGET_UNIFIED_TX) || defined(TARGET_UNIFIED_RX)
   {"/hardware.html", "text/html", (uint8_t *)HARDWARE_HTML, sizeof(HARDWARE_HTML)},
   {"/hardware.js", "text/javascript", (uint8_t *)HARDWARE_JS, sizeof(HARDWARE_JS)},
-#endif
 };
 
 static void WebUpdateSendContent(AsyncWebServerRequest *request)
@@ -162,13 +158,11 @@ static void WebUpdateHandleRoot(AsyncWebServerRequest *request)
   }
   force_update = request->hasArg("force");
   AsyncWebServerResponse *response;
-  #if defined(TARGET_UNIFIED_TX) || defined(TARGET_UNIFIED_RX)
   if (connectionState == hardwareUndefined)
   {
     response = request->beginResponse_P(200, "text/html", (uint8_t*)HARDWARE_HTML, sizeof(HARDWARE_HTML));
   }
   else
-  #endif
   {
     response = request->beginResponse_P(200, "text/html", (uint8_t*)INDEX_HTML, sizeof(INDEX_HTML));
   }
@@ -180,22 +174,6 @@ static void WebUpdateHandleRoot(AsyncWebServerRequest *request)
 }
 
 #if defined(GPIO_PIN_PWM_OUTPUTS)
-static String WebGetPwmStr()
-{
-  // Output is raw integers, the Javascript side needs to parse it
-  // ,"pwm":[49664,50688,51200] = 3 channels, 0=512, 1=512, 2=0
-  String pwmStr(",\"pwm\":[");
-  for (uint8_t ch=0; ch<GPIO_PIN_PWM_OUTPUTS_COUNT; ++ch)
-  {
-    if (ch > 0)
-      pwmStr.concat(',');
-    pwmStr.concat(config.GetPwmChannel(ch)->raw);
-  }
-  pwmStr.concat(']');
-
-  return pwmStr;
-}
-
 static void WebUpdatePwm(AsyncWebServerRequest *request)
 {
   String pwmStr = request->arg("pwm");
@@ -222,7 +200,6 @@ static void WebUpdatePwm(AsyncWebServerRequest *request)
 }
 #endif
 
-#if defined(TARGET_UNIFIED_TX) || defined(TARGET_UNIFIED_RX)
 static void putFile(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
   static File file;
@@ -276,40 +253,43 @@ static void HandleReset(AsyncWebServerRequest *request)
   request->client()->close();
   rebootTime = millis() + 100;
 }
-#endif
 
-static void WebUpdateSendMode(AsyncWebServerRequest *request)
+static void GetConfiguration(AsyncWebServerRequest *request)
 {
-  String s = String("{\"ssid\":\"") + station_ssid + "\",\"mode\":\"";
-  if (wifiMode == WIFI_STA) {
-    s += "STA\"";
-  } else {
-    s += "AP\"";
-  }
+  DynamicJsonDocument options(2048);
+  deserializeJson(options, getOptions());
+  DynamicJsonDocument json(2048);
+  json["options"] = options;
+  json["config"]["ssid"] = station_ssid;
+  json["config"]["mode"] = wifiMode == WIFI_AP_STA ? "STA" : "AP";
   #if defined(TARGET_RX)
-  s += ",\"modelid\":" + String(config.GetModelId());
-  #endif
+  json["config"]["modelid"] = config.GetModelId();
   #if defined(GPIO_PIN_PWM_OUTPUTS)
-  if (GPIO_PIN_PWM_OUTPUTS_COUNT > 0) {
-    s += WebGetPwmStr();
+  for (uint8_t ch=0; ch<GPIO_PIN_PWM_OUTPUTS_COUNT; ++ch)
+  {
+    json["config"]["pwm"][ch] = config.GetPwmChannel(ch)->raw;
   }
   #endif
-  s += ",\"product_name\": \"" + String(product_name) + "\"";
-  s += ",\"lua_name\": \"" + String(device_name) + "\"";
-  s += ",\"reg_domain\": \"" + String(getRegulatoryDomain()) + "\"";
-  s += "}";
-  request->send(200, "application/json", s);
+  #endif
+  json["config"]["product_name"] = product_name;
+  json["config"]["lua_name"] = device_name;
+  json["config"]["reg_domain"] = getRegulatoryDomain();
+  AsyncResponseStream *response = request->beginResponseStream("application/json");
+  serializeJson(json, *response);
+  request->send(response);
 }
 
 static void WebUpdateGetTarget(AsyncWebServerRequest *request)
 {
-  String s = String("{\"target\":\"") + (const char *)&target_name[4] + "\"" +
-    ",\"version\": \"" + VERSION + "\"" +
-    ",\"product_name\": \"" + product_name + "\"" +
-    ",\"lua_name\": \"" + device_name + "\"" +
-    ",\"reg_domain\": \"" + getRegulatoryDomain() + "\"" +
-    "}";
-  request->send(200, "application/json", s);
+  DynamicJsonDocument json(2048);
+  json["target"] = &target_name[4];
+  json["version"] = VERSION;
+  json["product_name"] = product_name;
+  json["lua_name"] = device_name;
+  json["reg_domain"] = getRegulatoryDomain();
+  AsyncResponseStream *response = request->beginResponseStream("application/json");
+  serializeJson(json, *response);
+  request->send(response);
 }
 
 static void WebUpdateSendNetworks(AsyncWebServerRequest *request)
@@ -379,24 +359,20 @@ static void WebUpdateSetHome(AsyncWebServerRequest *request)
   DBGLN("Setting network %s", ssid.c_str());
   strcpy(station_ssid, ssid.c_str());
   strcpy(station_password, password.c_str());
-#if defined(TARGET_UNIFIED_TX) || defined(TARGET_UNIFIED_RX)
   if (request->hasArg("save")) {
     strlcpy(firmwareOptions.home_wifi_ssid, ssid.c_str(), sizeof(firmwareOptions.home_wifi_ssid));
     strlcpy(firmwareOptions.home_wifi_password, password.c_str(), sizeof(firmwareOptions.home_wifi_password));
     saveOptions();
   }
-#endif
   WebUpdateConnect(request);
 }
 
 static void WebUpdateForget(AsyncWebServerRequest *request)
 {
   DBGLN("Forget network");
-#if defined(TARGET_UNIFIED_TX) || defined(TARGET_UNIFIED_RX)
   firmwareOptions.home_wifi_ssid[0] = 0;
   firmwareOptions.home_wifi_password[0] = 0;
   saveOptions();
-#endif
   station_ssid[0] = 0;
   station_password[0] = 0;
   String msg = String("Home network forgotten, please connect to access point '") + wifi_ap_ssid + "' with password '" + wifi_ap_password + "'";
@@ -712,11 +688,11 @@ static void startServices()
   server.on("/elrs.css", WebUpdateSendContent);
   server.on("/mui.js", WebUpdateSendContent);
   server.on("/scan.js", WebUpdateSendContent);
-  server.on("/mode.json", WebUpdateSendMode);
   server.on("/networks.json", WebUpdateSendNetworks);
   server.on("/sethome", WebUpdateSetHome);
   server.on("/forget", WebUpdateForget);
   server.on("/connect", WebUpdateConnect);
+  server.on("/config", GetConfiguration);
   server.on("/access", WebUpdateAccessPoint);
   server.on("/target", WebUpdateGetTarget);
   server.on("/firmware.bin", WebUpdateGetFirmware);
@@ -739,16 +715,14 @@ static void startServices()
   #if defined(GPIO_PIN_PWM_OUTPUTS)
     server.on("/pwm", WebUpdatePwm);
   #endif
-  #if defined(TARGET_UNIFIED_TX) || defined(TARGET_UNIFIED_RX)
-    server.on("/hardware.html", WebUpdateSendContent);
-    server.on("/hardware.js", WebUpdateSendContent);
-    server.on("/hardware.json", getFile).onBody(putFile);
-    server.on("/options.json", getFile).onBody(putFile);
-    server.on("/reboot", HandleReboot);
-    server.on("/reset", HandleReset);
-    AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/buttons", WebUpdateButtonColors);
-    server.addHandler(handler);
-  #endif
+  server.on("/hardware.html", WebUpdateSendContent);
+  server.on("/hardware.js", WebUpdateSendContent);
+  server.on("/hardware.json", getFile).onBody(putFile);
+  server.on("/options.json", getFile).onBody(putFile);
+  server.on("/reboot", HandleReboot);
+  server.on("/reset", HandleReset);
+  AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/buttons", WebUpdateButtonColors);
+  server.addHandler(handler);
 
   server.onNotFound(WebUpdateHandleNotFound);
 

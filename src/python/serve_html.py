@@ -68,35 +68,34 @@ def hardware_js():
     response.content_type = 'text/javascript; charset=latin9'
     return apply_template('hardware.js')
 
-@route('/options.json')
+@route('/config')
 def options():
     response.content_type = 'application/json; charset=latin9'
     return {
-        'uid': [1,2,3,4,5,6],
-        'wifi-on-interval': 60,
-        "tlm-interval": 240,
-        "fan-runtime": 30,
-        "no-sync-on-arm": False,
-        "uart-inverted": True,
-        "unlock-higher-power": False,
-        "rcvr-uart-baud": 400000,
-        "rcvr-invert-tx": False,
-        "lock-on-first-connection": True,
-        "domain": 1,
-        "button-colors": [-1,255*256]
-    }
-
-@route('/mode.json')
-def mode():
-    response.content_type = 'application/json; charset=latin9'
-    return {
-        "ssid": "A connected network",
-        "mode": "STA",
-        "modelid": 12,
-        "pwm": [49664,50688,51200],
-        "product_name": "Mock framework for web UI testing",
-        "lua_name": "Bogus",
-        "reg_domain": "FCC915"
+        "options": {
+            'uid': [1,2,3,4,5,6],
+            'wifi-on-interval': 60,
+            "tlm-interval": 240,
+            "fan-runtime": 30,
+            "no-sync-on-arm": False,
+            "uart-inverted": True,
+            "unlock-higher-power": False,
+            "rcvr-uart-baud": 400000,
+            "rcvr-invert-tx": False,
+            "lock-on-first-connection": True,
+            "domain": 1,
+            "button-colors": [-1,255*256]
+        },
+        "config": {
+            "ssid":"ConnectedNetwork",
+            "mode":"STA",
+            "modelid":255,
+            "pwm":[512,1536,2048,3584,4608],
+            "product_name":
+            "Generic ESP8285 + 5xPWM 2.4Ghz RX",
+            "lua_name":"ELRS+PWM 2400RX",
+            "reg_domain":"ISM2G4"
+        }
     }
 
 @route('/networks.json')
