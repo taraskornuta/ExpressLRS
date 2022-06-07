@@ -1,8 +1,10 @@
 #pragma once
 
 #include "device.h"
-#include <list>
+
 #include <functional>
+#include <list>
+#include <map>
 
 typedef struct action {
     uint8_t button;
@@ -20,6 +22,7 @@ typedef struct action {
     void registerButtonFunction(const char *name, std::function<void()> function);
     void addButtonAction(uint8_t button, bool longPress, uint8_t count, const char *name);
     const std::list<action_t> &getButtonActions();
+    const std::map<const char *, std::function<void()>> &getButtonFunctions();
 #else
     inline void registerButtonFunction(const char *name, std::function<void()> function) {}
     inline void addButtonAction(uint8_t button, bool longPress, uint8_t count, const char *name) {}

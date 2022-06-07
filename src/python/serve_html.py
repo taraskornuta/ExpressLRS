@@ -84,7 +84,33 @@ def options():
             "rcvr-invert-tx": False,
             "lock-on-first-connection": True,
             "domain": 1,
-            "button-colors": [-1,255*256]
+            "button-colors": [-1,255*256],
+            "button-actions": [
+                {
+                    "button": 1,
+                    "is-long-press": False,
+                    "count": 3,
+                    "action": "bind"
+                },
+                {
+                    "button": 1,
+                    "is-long-press": True,
+                    "count": 0,
+                    "action": "inc-power"
+                },
+                {
+                    "button": 2,
+                    "is-long-press": False,
+                    "count": 2,
+                    "action": "vtx-channel"
+                },
+                {
+                    "button": 2,
+                    "is-long-press": True,
+                    "count": 0,
+                    "action": "send-vtx"
+                }
+            ]
         },
         "config": {
             "ssid":"ConnectedNetwork",
@@ -95,7 +121,8 @@ def options():
             "Generic ESP8285 + 5xPWM 2.4Ghz RX",
             "lua_name":"ELRS+PWM 2400RX",
             "reg_domain":"ISM2G4"
-        }
+        },
+        "button-funcs": ["bind", "inc-power", "vtx-channel", "send-vtx", "vtx-band", "wifi"]
     }
 
 @route('/networks.json')

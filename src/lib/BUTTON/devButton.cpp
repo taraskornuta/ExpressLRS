@@ -8,9 +8,6 @@
 #include "config.h"
 #include "devButton.h"
 
-#include <map>
-#include <list>
-
 #ifndef GPIO_BUTTON_INVERTED
 #define GPIO_BUTTON_INVERTED false
 #endif
@@ -33,6 +30,11 @@ static std::list<action_t> buttonActions;
 const std::list<action_t> &getButtonActions()
 {
     return buttonActions;
+}
+
+const std::map<const char *, std::function<void()>> &getButtonFunctions()
+{
+    return actions;
 }
 
 void registerButtonFunction(const char *name, std::function<void()> function)

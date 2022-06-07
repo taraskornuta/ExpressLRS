@@ -256,10 +256,28 @@ static void HandleReset(AsyncWebServerRequest *request)
 
 static void GetConfiguration(AsyncWebServerRequest *request)
 {
+  DynamicJsonDocument json(2048);
+
   DynamicJsonDocument options(2048);
   deserializeJson(options, getOptions());
-  DynamicJsonDocument json(2048);
   json["options"] = options;
+  const std::list<action_t> &actions = getButtonActions();
+  int i=0;
+  for (std::list<action_t>::const_iterator it = actions.begin() ; it != actions.end() ; ++it, ++i)
+  {
+    json["options"]["button-actions"][i]["button"] = it->button;
+    json["options"]["button-actions"][i]["is-long-press"] = it->longPress;
+    json["options"]["button-actions"][i]["count"] = it->count;
+    json["options"]["button-actions"][i]["action"] = it->name;
+  }
+
+  const std::map<const char *, std::function<void()>> &funcs = getButtonFunctions();
+  i = 0;
+  for (std::map<const char *, std::function<void()>>::const_iterator it = funcs.begin() ; it != funcs.end() ; ++it, ++i)
+  {
+    json["button-funcs"][i] = it->first;
+  }
+
   json["config"]["ssid"] = station_ssid;
   json["config"]["mode"] = wifiMode == WIFI_AP_STA ? "STA" : "AP";
   #if defined(TARGET_RX)
@@ -274,6 +292,7 @@ static void GetConfiguration(AsyncWebServerRequest *request)
   json["config"]["product_name"] = product_name;
   json["config"]["lua_name"] = device_name;
   json["config"]["reg_domain"] = getRegulatoryDomain();
+
   AsyncResponseStream *response = request->beginResponseStream("application/json");
   serializeJson(json, *response);
   request->send(response);
