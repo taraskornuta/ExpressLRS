@@ -1342,12 +1342,16 @@ void setup()
         }
     }
 
+#if defined(HAS_BUTTON)
     registerButtonFunction("bind", EnterBindingMode);
     registerButtonFunction("reboot", reboot);
 
-    // default button actions
-    addButtonAction(1, true, 4, "wifi");
-    addButtonAction(1, true, 8, "reboot");
+    if (getButtonActions().empty()) {
+        // default button actions
+        addButtonAction(1, true, 4, "wifi");
+        addButtonAction(1, true, 8, "reboot");
+    }
+#endif
 
     devicesStart();
 }

@@ -224,6 +224,7 @@ const char PROGMEM compile_options[] = {
 };
 #else // TARGET_UNIFIED_TX || TARGET_UNIFIED_RX
 
+#include <devButton.h>
 #include <ArduinoJson.h>
 #if defined(PLATFORM_ESP8266)
 #include <FS.h>
@@ -429,6 +430,17 @@ bool options_init()
     firmwareOptions.lock_on_first_connection = doc["lock-on-first-connection"] | true;
     #endif
     firmwareOptions.domain = doc["domain"] | 0;
+
+    if (doc["button-actions"].is<JsonArray>()) {
+        for (JsonVariant value : doc["button-actions"].as<JsonArray>()) {
+            addButtonAction(
+                value["button"].as<int>(),
+                value["is-long-press"].as<boolean>(),
+                value["count"].as<int>(),
+                value["action"].as<String>().c_str()
+            );
+        }
+    }
 
     serializeOptions();
 
