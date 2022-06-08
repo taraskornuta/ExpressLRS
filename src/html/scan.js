@@ -6,6 +6,8 @@
 
 document.addEventListener('DOMContentLoaded', init, false);
 let scanTimer = undefined;
+let colorTimer = undefined;
+let colorUpdated  = false;
 let storedModelId = 255;
 let buttonActions = '';
 
@@ -106,9 +108,18 @@ function init() {
       _('modelid').value = '255';
     }
   };
-  if (_('button1-color')) _('button1-color').oninput = sendCurrentColors;
-  if (_('button2-color')) _('button2-color').oninput = sendCurrentColors;
+  if (_('button1-color')) _('button1-color').oninput = changeCurrentColors;
+  if (_('button2-color')) _('button2-color').oninput = changeCurrentColors;
   initOptions();
+}
+
+function changeCurrentColors() {
+  if (colorTimer === undefined) {
+    sendCurrentColors();
+    colorTimer = setInterval(timeoutCurrentColors, 50);
+  } else {
+    colorUpdated = true;
+  }
 }
 
 function sendCurrentColors() {
@@ -126,6 +137,16 @@ function sendCurrentColors() {
   xmlhttp.open('POST', '/buttons', true);
   xmlhttp.setRequestHeader('Content-type', 'application/json');
   xmlhttp.send(JSON.stringify(colors));
+  colorUpdated = false;
+}
+
+function timeoutCurrentColors() {
+  if (colorUpdated) {
+    sendCurrentColors();
+  } else {
+    clearInterval(colorTimer);
+    colorTimer = undefined;
+  }
 }
 
 function updateConfig(data) {
