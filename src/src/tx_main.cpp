@@ -260,12 +260,12 @@ void DynamicPower_Update()
   dynamic_power_rssi_n = 0;
 }
 
-void ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status)
+bool ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status)
 {
   if (status != SX12xxDriverCommon::SX12XX_RX_OK)
   {
     DBGLN("TLM HW CRC error");
-    return;
+    return false;
   }
   uint16_t const inCRC = (((uint16_t)Radio.RXdataBuffer[0] & 0b11111100) << 6) | Radio.RXdataBuffer[7];
 
@@ -278,17 +278,21 @@ void ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status
   if ((inCRC != calculatedCRC))
   {
     DBGLN("TLM crc error");
-    return;
+    return false;
   }
 
   if (type != TLM_PACKET)
   {
     DBGLN("TLM type error %d", type);
-    return;
+    return false;
   }
 
   LastTLMpacketRecvMillis = millis();
   LQCalc.add();
+
+  Radio.GetLastPacketStats();
+  crsf.LinkStatistics.downlink_SNR = Radio.LastPacketSNR;
+  crsf.LinkStatistics.downlink_RSSI = Radio.LastPacketRSSI;
 
     switch(TLMheader & ELRS_TELEMETRY_TYPE_MASK)
     {
@@ -300,8 +304,6 @@ void ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status
             crsf.LinkStatistics.uplink_RSSI_2 = -(Radio.RXdataBuffer[3] & 0x7f);
             crsf.LinkStatistics.uplink_SNR = Radio.RXdataBuffer[4];
             crsf.LinkStatistics.uplink_Link_quality = Radio.RXdataBuffer[5];
-            crsf.LinkStatistics.downlink_SNR = Radio.LastPacketSNR;
-            crsf.LinkStatistics.downlink_RSSI = Radio.LastPacketRSSI;
             crsf.LinkStatistics.active_antenna = Radio.RXdataBuffer[2] >> 7;
             connectionHasModelMatch = Radio.RXdataBuffer[3] >> 7;
             // -- uplink_TX_Power is updated via devCRSF event, so it updates with no telemetry
@@ -316,6 +318,48 @@ void ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status
             TelemetryReceiver.ReceiveData(TLMheader >> ELRS_TELEMETRY_SHIFT, Radio.RXdataBuffer + 2);
             break;
     }
+
+  return true;
+}
+
+expresslrs_tlm_ratio_e ICACHE_RAM_ATTR UpdateTlmRatioEffective()
+{
+  expresslrs_tlm_ratio_e ratioConfigured = (expresslrs_tlm_ratio_e)config.GetTlm();
+  // default is suggested rate for TLM_RATIO_STD/TLM_RATIO_DISARMED
+  expresslrs_tlm_ratio_e retVal = ExpressLRS_currAirRate_Modparams->TLMinterval;
+  bool updateTelemDenom = true;
+
+  // TLM ratio is boosted for one sync cycle when the MspSender goes active
+  if (MspSender.IsActive())
+  {
+    retVal = TLM_RATIO_1_2;
+  }
+  // If Armed, telemetry is disabled, otherwise use STD
+  else if (ratioConfigured == TLM_RATIO_DISARMED)
+  {
+    if (IsArmed())
+    {
+      retVal = TLM_RATIO_NO_TLM;
+      // Avoid updating ExpressLRS_currTlmDenom until connectionState == disconnected
+      if (connectionState == connected)
+        updateTelemDenom = false;
+    }
+  }
+  else if (ratioConfigured != TLM_RATIO_STD)
+  {
+    retVal = ratioConfigured;
+  }
+
+  if (updateTelemDenom)
+  {
+    uint8_t newTlmDenom = TLMratioEnumToValue(retVal);
+    // Delay going into disconnected state when the TLM ratio increases
+    if (connectionState == connected && ExpressLRS_currTlmDenom > newTlmDenom)
+      LastTLMpacketRecvMillis = SyncPacketLastSent;
+    ExpressLRS_currTlmDenom = newTlmDenom;
+  }
+
+  return retVal;
 }
 
 void ICACHE_RAM_ATTR GenerateSyncPacketData()
@@ -335,18 +379,13 @@ void ICACHE_RAM_ATTR GenerateSyncPacketData()
     --syncSpamCounter;
   SyncPacketLastSent = millis();
 
-  // TLM ratio is boosted for one sync cycle when the MspSender goes active
-  expresslrs_tlm_ratio_e newTlmRatio = (MspSender.IsActive()) ? TLM_RATIO_1_2 : (expresslrs_tlm_ratio_e)config.GetTlm();
-  // Delay going into disconnected state when the TLM ratio increases
-  if (connectionState == connected && ExpressLRS_currAirRate_Modparams->TLMinterval < newTlmRatio)
-    LastTLMpacketRecvMillis = SyncPacketLastSent;
-  ExpressLRS_currAirRate_Modparams->TLMinterval = newTlmRatio;
+  expresslrs_tlm_ratio_e newTlmRatio = UpdateTlmRatioEffective();
 
   Radio.TXdataBuffer[0] = SYNC_PACKET & 0b11;
   Radio.TXdataBuffer[1] = FHSSgetCurrIndex();
   Radio.TXdataBuffer[2] = NonceTX;
   Radio.TXdataBuffer[3] = ((Index & SYNC_PACKET_RATE_MASK) << SYNC_PACKET_RATE_OFFSET) +
-                          ((newTlmRatio & SYNC_PACKET_TLM_MASK) << SYNC_PACKET_TLM_OFFSET) +
+                          (((newTlmRatio - TLM_RATIO_NO_TLM) & SYNC_PACKET_TLM_MASK) << SYNC_PACKET_TLM_OFFSET) +
                           ((SwitchEncMode & SYNC_PACKET_SWITCH_MASK) << SYNC_PACKET_SWITCH_OFFSET);
   Radio.TXdataBuffer[4] = UID[3];
   Radio.TXdataBuffer[5] = UID[4];
@@ -420,9 +459,8 @@ void ICACHE_RAM_ATTR HandleFHSS()
 
 void ICACHE_RAM_ATTR HandlePrepareForTLM()
 {
-  uint8_t modresult = (NonceTX + 1) % TLMratioEnumToValue(ExpressLRS_currAirRate_Modparams->TLMinterval);
-  // If next packet is going to be telemetry, start listening to have a large receive window (time-wise)
-  if (ExpressLRS_currAirRate_Modparams->TLMinterval != TLM_RATIO_NO_TLM && modresult == 0)
+  // If TLM enabled and next packet is going to be telemetry, start listening to have a large receive window (time-wise)
+  if (ExpressLRS_currTlmDenom != 1 && ((NonceTX + 1) % ExpressLRS_currTlmDenom) == 0)
   {
     Radio.RXnb();
     TelemetryRcvPhase = ttrpPreReceiveGap;
@@ -433,19 +471,12 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
 {
   uint32_t now = millis();
   static uint8_t syncSlot;
-  uint32_t SyncInterval;
-  bool skipSync;
 
-  if (firmwareOptions.no_sync_on_arm)
-  {
-    SyncInterval = 250;
-    skipSync = IsArmed() || InBindingMode;
-  }
-  else
-  {
-    SyncInterval = (connectionState == connected) ? ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalConnected : ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalDisconnected;
-    skipSync = InBindingMode;
-  }
+  const bool isTlmDisarmed = config.GetTlm() == TLM_RATIO_DISARMED;
+  uint32_t SyncInterval = (connectionState == connected && !isTlmDisarmed) ? ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalConnected : ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalDisconnected;
+  bool skipSync = InBindingMode ||
+    // TLM_RATIO_DISARMED keeps sending sync packets even when armed until the RX stops sending telemetry and the TLM=Off has taken effect
+    (isTlmDisarmed && IsArmed() && (ExpressLRS_currTlmDenom == 1));
 
   uint8_t NonceFHSSresult = NonceTX % ExpressLRS_currAirRate_Modparams->FHSShopInterval;
   bool WithinSyncSpamResidualWindow = now - rfModeLastChangedMS < syncSpamAResidualTimeMS;
@@ -492,7 +523,7 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
       // always enable msp after a channel package since the slot is only used if MspSender has data to send
       NextPacketIsMspData = true;
       PackChannelData(Radio.TXdataBuffer, &crsf, TelemetryReceiver.GetCurrentConfirm(),
-        NonceTX, TLMratioEnumToValue(ExpressLRS_currAirRate_Modparams->TLMinterval));
+        NonceTX, ExpressLRS_currTlmDenom);
     }
   }
 
@@ -685,10 +716,11 @@ static void CheckConfigChangePending()
   }
 }
 
-void ICACHE_RAM_ATTR RXdoneISR(SX12xxDriverCommon::rx_status const status)
+bool ICACHE_RAM_ATTR RXdoneISR(SX12xxDriverCommon::rx_status const status)
 {
-  ProcessTLMpacket(status);
+  bool packetSuccessful = ProcessTLMpacket(status);
   busyTransmitting = false;
+  return packetSuccessful;
 }
 
 void ICACHE_RAM_ATTR TXdoneISR()
@@ -712,9 +744,8 @@ static void UpdateConnectDisconnectStatus()
 {
   // Number of telemetry packets which can be lost in a row before going to disconnected state
   constexpr unsigned RX_LOSS_CNT = 5;
-  const uint32_t tlmInterval = TLMratioEnumToValue(ExpressLRS_currAirRate_Modparams->TLMinterval);
   // +2 to account for any rounding down and partial millis()
-  const uint32_t msConnectionLostTimeout = tlmInterval * ExpressLRS_currAirRate_Modparams->interval / (1000U / RX_LOSS_CNT) + 2;
+  const uint32_t msConnectionLostTimeout = (uint32_t)ExpressLRS_currTlmDenom * ExpressLRS_currAirRate_Modparams->interval / (1000U / RX_LOSS_CNT) + 2;
   // Capture the last before now so it will always be <= now
   const uint32_t lastTlmMillis = LastTLMpacketRecvMillis;
   const uint32_t now = millis();
