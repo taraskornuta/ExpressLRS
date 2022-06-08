@@ -1343,13 +1343,13 @@ void setup()
     }
 
 #if defined(HAS_BUTTON)
-    registerButtonFunction("bind", EnterBindingMode);
-    registerButtonFunction("reboot", reboot);
+    registerButtonFunction(ACTION_BIND, EnterBindingMode);
+    registerButtonFunction(ACTION_REBOOT, reboot);
 
     if (getButtonActions().empty()) {
         // default button actions
-        addButtonAction(1, true, 4, "wifi");
-        addButtonAction(1, true, 8, "reboot");
+        addButtonAction(1, true, 4, ACTION_START_WIFI);
+        addButtonAction(1, true, 8, ACTION_REBOOT);
     }
 #endif
 

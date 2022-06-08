@@ -268,14 +268,7 @@ static void GetConfiguration(AsyncWebServerRequest *request)
     json["options"]["button-actions"][i]["button"] = it->button;
     json["options"]["button-actions"][i]["is-long-press"] = it->longPress;
     json["options"]["button-actions"][i]["count"] = it->count;
-    json["options"]["button-actions"][i]["action"] = it->name;
-  }
-
-  const std::map<const char *, std::function<void()>> &funcs = getButtonFunctions();
-  i = 0;
-  for (std::map<const char *, std::function<void()>>::const_iterator it = funcs.begin() ; it != funcs.end() ; ++it, ++i)
-  {
-    json["button-functions"][i] = it->first;
+    json["options"]["button-actions"][i]["action"] = it->action;
   }
 
   json["config"]["ssid"] = station_ssid;
@@ -604,7 +597,7 @@ static void initialize()
   #if defined(PLATFORM_ESP8266)
   WiFi.forceSleepBegin();
   #endif
-  registerButtonFunction("wifi", [](){ connectionState = wifiUpdate; });
+  registerButtonFunction(ACTION_START_WIFI, [](){ connectionState = wifiUpdate; });
 }
 
 static void startWiFi(unsigned long now)

@@ -437,7 +437,7 @@ bool options_init()
                 value["button"].as<int>(),
                 value["is-long-press"].as<boolean>(),
                 value["count"].as<int>(),
-                value["action"].as<String>().c_str()
+                value["action"].as<action_e>()
             );
         }
     }

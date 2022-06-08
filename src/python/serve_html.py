@@ -90,25 +90,25 @@ def options():
                     "button": 1,
                     "is-long-press": False,
                     "count": 3,
-                    "action": "bind"
+                    "action": 5
                 },
                 {
                     "button": 1,
                     "is-long-press": True,
                     "count": 5,
-                    "action": "inc-power"
+                    "action": 0
                 },
                 {
                     "button": 2,
                     "is-long-press": False,
                     "count": 2,
-                    "action": "vtx-channel"
+                    "action": 2
                 },
                 {
                     "button": 2,
                     "is-long-press": True,
                     "count": 0,
-                    "action": "send-vtx"
+                    "action": 3
                 }
             ]
         },
@@ -121,8 +121,7 @@ def options():
             "Generic ESP8285 + 5xPWM 2.4Ghz RX",
             "lua_name":"ELRS+PWM 2400RX",
             "reg_domain":"ISM2G4"
-        },
-        "button-functions": ["bind", "inc-power", "vtx-channel", "send-vtx", "vtx-band", "wifi"]
+        }
     }
 
 @route('/networks.json')

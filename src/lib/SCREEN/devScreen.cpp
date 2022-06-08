@@ -143,11 +143,11 @@ static void initialize()
         state_machine.start(millis(), getInitialState());
     }
 
-    registerButtonFunction("vtx-band", [](){
+    registerButtonFunction(ACTION_GOTO_VTX_BAND, [](){
         jumpToBandSelect = true;
         devicesTriggerEvent();
     });
-    registerButtonFunction("vtx-channel", [](){
+    registerButtonFunction(ACTION_GOTO_VTX_CHANNEL, [](){
         jumpToChannelSelect = true;
         devicesTriggerEvent();
     });

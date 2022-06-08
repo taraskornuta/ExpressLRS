@@ -220,7 +220,7 @@ void POWERMGNT::init()
     LoadCalibration();
     setDefaultPower();
 #if defined(TARGET_TX)
-    registerButtonFunction("inc-power", cyclePower);
+    registerButtonFunction(ACTION_INCREASE_POWER, cyclePower);
 #endif
 }
 

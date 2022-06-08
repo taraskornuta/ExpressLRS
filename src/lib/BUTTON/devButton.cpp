@@ -23,8 +23,7 @@ static Button button1;
 static Button button2;
 #endif
 
-static std::map<const char *, std::function<void()>> actions;
-
+static std::function<void()> actions[ACTION_LAST] = { nullptr };
 static std::list<action_t> buttonActions;
 
 const std::list<action_t> &getButtonActions()
@@ -32,20 +31,19 @@ const std::list<action_t> &getButtonActions()
     return buttonActions;
 }
 
-const std::map<const char *, std::function<void()>> &getButtonFunctions()
+const std::function<void()> *getButtonFunctions()
 {
     return actions;
 }
 
-void registerButtonFunction(const char *name, std::function<void()> function)
+void registerButtonFunction(action_e action, std::function<void()> function)
 {
-    actions[name] = function;
+    actions[action] = function;
 }
 
-void addButtonAction(uint8_t button, bool longPress, uint8_t count, const char *name)
+void addButtonAction(uint8_t button, bool longPress, uint8_t count, action_e action)
 {
-    action_t action = {button, longPress, count, name};
-    buttonActions.push_back(action);
+    buttonActions.push_back({button, longPress, count, action});
 }
 
 static void handlePress(uint8_t button, bool longPress, uint8_t count)
@@ -56,9 +54,9 @@ static void handlePress(uint8_t button, bool longPress, uint8_t count)
     {
         if (it->button == button && it->longPress == longPress && (it->count == 0 || it->count == count))
         {
-            if (actions[it->name])
+            if (actions[it->action])
             {
-                actions[it->name]();
+                actions[it->action]();
             }
         }
     }

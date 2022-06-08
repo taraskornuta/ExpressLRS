@@ -1148,14 +1148,14 @@ void setup()
   }
 
 #if defined(HAS_BUTTON)
-  registerButtonFunction("bind", EnterBindingMode);
+  registerButtonFunction(ACTION_BIND, EnterBindingMode);
 
   if (getButtonActions().empty()) {
     // default button actions
-    addButtonAction(1, false, 3, "bind");         // tripple-click, send bind message
-    addButtonAction(1, true, 0, "inc-power");     // long-press, increment power level
-    addButtonAction(2, false, 2, "vtx-channel");  // double-click show VTX channel menu on OLED/TFT
-    addButtonAction(2, true, 0, "send-vtx");      // long-press, send current VTX settings
+    addButtonAction(1, false, 3, ACTION_BIND);              // tripple-click, send bind message
+    addButtonAction(1, true, 0, ACTION_INCREASE_POWER);     // long-press, increment power level
+    addButtonAction(2, false, 2, ACTION_GOTO_VTX_CHANNEL);  // double-click show VTX channel menu on OLED/TFT
+    addButtonAction(2, true, 0, ACTION_SEND_VTX);           // long-press, send current VTX settings
   }
 #endif
 

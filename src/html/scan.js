@@ -9,7 +9,7 @@ let scanTimer = undefined;
 let colorTimer = undefined;
 let colorUpdated  = false;
 let storedModelId = 255;
-let buttonActions = '';
+let buttonFunctions = ['Increase Power', 'Goto VTX Band Menu', 'Goto VTX Channel Menu', 'Send VTX Settings', 'Start WiFi', 'Enter Binding Mode', 'Reboot']
 
 function _(el) {
   return document.getElementById(el);
@@ -181,8 +181,8 @@ function initOptions() {
       updateConfig(data['config']);
 
       buttonActions = '';
-      for (const [, v] of Object.entries(data['button-functions'])) {
-        buttonActions = buttonActions + `<option value='${v}'>${v}</option>`;
+      for (const [k, v] of Object.entries(buttonFunctions)) {
+        buttonActions = buttonActions + `<option value='${k}'>${v}</option>`;
       }
 
       scanTimer = setInterval(getNetworks, 2000);
@@ -506,9 +506,8 @@ function appendRow(v) {
     if (v.count > 1) when = when + ' ' + v.count + ' times';
   }
   row.insertCell().textContent = when;
-  row.insertCell().textContent = v.action;
+  row.insertCell().textContent = buttonFunctions[v.action];
   row.insertCell().innerHTML = `<button class="mui-btn" onclick="deleteAction('row${rowcounter}');">Delete</button>`;
-  row.setAttribute('data-json', JSON.stringify(v));
   rowcounter++;
 }
 
@@ -577,7 +576,7 @@ function addAction(e) {
           'button': parseInt(_('select-button').value),
           'is-long-press': _('select-press').value == 'true' ? true : false,
           'count': parseInt(_('select-count').value),
-          'action': _('select-action').value,
+          'action': parseInt(_('select-action').value),
         });
       }
     }

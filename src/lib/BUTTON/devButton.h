@@ -3,15 +3,18 @@
 #include "device.h"
 
 #include <functional>
-#include <list>
-#include <map>
 
-typedef struct action {
-    uint8_t button;
-    bool longPress;
-    uint8_t count;
-    const char *name;
-} action_t;
+typedef enum : uint8_t {
+    ACTION_INCREASE_POWER,
+    ACTION_GOTO_VTX_BAND,
+    ACTION_GOTO_VTX_CHANNEL,
+    ACTION_SEND_VTX,
+    ACTION_START_WIFI,
+    ACTION_BIND,
+    ACTION_REBOOT,
+
+    ACTION_LAST
+} action_e;
 
 #if defined(GPIO_PIN_BUTTON)
     #if defined(TARGET_TX) || \
@@ -19,8 +22,21 @@ typedef struct action {
         extern device_t Button_device;
         #define HAS_BUTTON
     #endif
-    void registerButtonFunction(const char *name, std::function<void()> function);
-    void addButtonAction(uint8_t button, bool longPress, uint8_t count, const char *name);
+
+    #include <list>
+    #include <map>
+
+    typedef struct action {
+        uint8_t button;
+        bool longPress;
+        uint8_t count;
+        action_e action;
+    } action_t;
+
+    void registerButtonFunction(action_e action, std::function<void()> function);
+    void addButtonAction(uint8_t button, bool longPress, uint8_t count, action_e action);
     const std::list<action_t> &getButtonActions();
-    const std::map<const char *, std::function<void()>> &getButtonFunctions();
+    const std::function<void()> *getButtonFunctions();
+#else
+    inline void registerButtonFunction(uint8_t action, std::function<void()> function) {}
 #endif
