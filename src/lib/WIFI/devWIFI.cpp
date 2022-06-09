@@ -272,7 +272,7 @@ static void GetConfiguration(AsyncWebServerRequest *request)
   }
 
   json["config"]["ssid"] = station_ssid;
-  json["config"]["mode"] = wifiMode == WIFI_AP_STA ? "STA" : "AP";
+  json["config"]["mode"] = wifiMode == WIFI_STA ? "STA" : "AP";
   #if defined(TARGET_RX)
   json["config"]["modelid"] = config.GetModelId();
   #if defined(GPIO_PIN_PWM_OUTPUTS)
