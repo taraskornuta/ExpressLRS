@@ -196,7 +196,7 @@ uint16_t getCurrentRPM()
     return currentRPM;
 }
 
-void timeoutTacho()
+static void timeoutTacho()
 {
 #if defined(PLATFORM_ESP32)
     uint16_t pulses = tachoPulses;
@@ -206,6 +206,13 @@ void timeoutTacho()
     DBGLN("RPM %d", currentRPM);
 #endif
 }
+
+#if defined(PLATFORM_ESP32)
+static void ICACHE_RAM_ATTR updateTachoCounter()
+{
+    tachoPulses++;
+}
+#endif
 
 static int start()
 {
@@ -219,7 +226,7 @@ static int start()
     if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
     {
         pinMode(GPIO_PIN_FAN_TACHO, INPUT_PULLUP);
-        attachInterrupt(GPIO_PIN_FAN_TACHO, [](){tachoPulses++;}, RISING);
+        attachInterrupt(GPIO_PIN_FAN_TACHO, updateTachoCounter, RISING);
     }
 #endif
     return DURATION_IMMEDIATELY;
