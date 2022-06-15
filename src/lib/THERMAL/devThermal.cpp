@@ -18,7 +18,6 @@ extern TxConfig config;
 #if defined(HAS_THERMAL)
 #include "common.h"
 #include "thermal.h"
-extern bool IsArmed();
 
 Thermal thermal;
 
@@ -83,7 +82,7 @@ static void initialize()
 #if defined(HAS_THERMAL)
 static void timeoutThermal()
 {
-    if(OPT_HAS_THERMAL_LM75A && !IsArmed() && connectionState != wifiUpdate)
+    if(OPT_HAS_THERMAL_LM75A && !CRSF::IsArmed() && connectionState != wifiUpdate)
     {
         thermal.handle();
 #ifdef HAS_SMART_FAN
