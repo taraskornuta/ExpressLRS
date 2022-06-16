@@ -1,9 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include "FIFO_GENERIC.h"
+#include "../FIFO_GENERIC/FIFO_GENERIC.h"
 #include "crsfmsp_common.h"
-#include "crc.h"
 #include "logging.h"
 
 /*  Takes a CRSF(MSP) frame and converts it to raw MSP frame

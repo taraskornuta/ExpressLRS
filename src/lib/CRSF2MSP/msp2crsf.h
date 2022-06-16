@@ -1,11 +1,10 @@
 #pragma once
 
 #include <cstdint>
-#include "FIFO_GENERIC.h"
-#include "crsfmsp_common.h"
-#include "crsf_protocol.h"
-#include "crc.h"
+#include "../FIFO_GENERIC/FIFO_GENERIC.h"
+#include "../CrsfProtocol/crsf_protocol.h"
 #include "logging.h"
+#include "crsfmsp_common.h"
 
 /* Takes a MSP frame and converts it to raw CRSF frame
    adding the CRSF header and checksum. Handles chunking of messages
@@ -20,7 +19,7 @@ private:
     void setVersion(uint8_t &data, MSPframeType_e version);
     uint8_t getHeaderDir(uint8_t headerDir);
     void setError(uint8_t &data, bool isError);
-    uint8_t seqNum; 
+    uint8_t seqNum;
 
     uint32_t getFrameLen(uint32_t payloadLen, uint8_t mspVersion);
     MSPframeType_e getVersion(const uint8_t *data);

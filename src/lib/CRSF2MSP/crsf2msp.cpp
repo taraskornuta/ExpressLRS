@@ -1,5 +1,7 @@
 #include "crsf2msp.h"
 
+#include "crc.h"
+
 extern GENERIC_CRC8 crsf_crc; // defined in crsf.cpp reused here
 
 CROSSFIRE2MSP::CROSSFIRE2MSP()

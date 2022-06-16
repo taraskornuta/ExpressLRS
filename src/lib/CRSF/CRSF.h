@@ -2,27 +2,27 @@
 #define H_CRSF
 
 #include "targets.h"
-#include "crsf_protocol.h"
+#include "../CrsfProtocol/crsf_protocol.h"
 #if defined(CRSF_RX_MODULE) && defined(USE_MSP_WIFI)
-#include "crsf2msp.h"
-#include "msp2crsf.h"
+#include "../CRSF2MSP/crsf2msp.h"
+#include "../CRSF2MSP/msp2crsf.h"
 #endif
 #ifndef TARGET_NATIVE
-#include "HardwareSerial.h"
+#include <HardwareSerial.h>
 #endif
-#include "msp.h"
-#include "msptypes.h"
+#include "../MSP/msp.h"
+#include "../MSP/msptypes.h"
 #include "LowPassFilter.h"
 #include "../CRC/crc.h"
-#include "telemetry_protocol.h"
+#include "../TelemetryProtocol/telemetry_protocol.h"
 
 #ifdef PLATFORM_ESP32
-#include "esp32-hal-uart.h"
+#include <esp32-hal-uart.h>
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/uart.h"
-#include "driver/gpio.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <driver/uart.h>
+#include <driver/gpio.h>
 #endif
 
 class CRSF

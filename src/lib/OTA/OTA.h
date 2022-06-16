@@ -2,8 +2,7 @@
 #define H_OTA
 
 #include <functional>
-#include "crc.h"
-#include "CRSF.h"
+#include "../CRSF/CRSF.h"
 
 #define OTA4_PACKET_SIZE     8U
 #define OTA4_CRC_CALC_LEN    offsetof(OTA_Packet4_s, crcLow)

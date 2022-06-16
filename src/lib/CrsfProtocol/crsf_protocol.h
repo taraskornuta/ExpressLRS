@@ -2,8 +2,8 @@
 
 #include <cstdint>
 #include <cmath>
-#include "crc.h"
-#include "options.h"
+#include "../CRC/crc.h"
+#include "../OPTIONS/options.h"
 
 #if TARGET_TX && PLATFORM_STM32
 #define CRSF_TX_MODULE_STM32 1
