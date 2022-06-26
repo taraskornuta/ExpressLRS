@@ -52,6 +52,7 @@ static int handle(void)
     else if ((is_screen_flipped == false) && (is_pre_screen_flipped == true))
     {
         display->doScreenBackLight(SCREEN_BACKLIGHT_ON);
+        state_machine.start(millis(), STATE_IDLE);
     }
     is_pre_screen_flipped = is_screen_flipped;
     if (is_screen_flipped)
