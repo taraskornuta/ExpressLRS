@@ -9,7 +9,11 @@
 const unsigned char target_name[] = "\xBE\xEF\xCA\xFE" STR(TARGET_NAME);
 const uint8_t target_name_size = sizeof(target_name);
 const char commit[] {LATEST_COMMIT, 0};
+#if defined(UNIT_TEST)
+const char version[] = "1.2.3";
+#else
 const char version[] = {LATEST_VERSION, 0};
+#endif
 
 #if defined(TARGET_TX)
 const char *wifi_hostname = "elrs_tx";
@@ -167,6 +171,7 @@ __attribute__ ((used)) const firmware_options_t firmwareOptions = {
 
 #include <devButton.h>
 #include <ArduinoJson.h>
+#include <StreamString.h>
 #if defined(PLATFORM_ESP8266)
 #include <FS.h>
 #else
@@ -212,9 +217,13 @@ uint32_t myGetSketchSize()
 }
 #endif
 
-static String builtinOptions;
+static StreamString builtinOptions;
+String& getOptions()
+{
+    return builtinOptions;
+}
 
-void serializeOptions()
+void saveOptions(Stream &stream)
 {
     DynamicJsonDocument doc(1024);
 
@@ -234,10 +243,6 @@ void serializeOptions()
     doc["fan-runtime"] = firmwareOptions.fan_min_runtime;
     doc["uart-inverted"] = firmwareOptions.uart_inverted;
     doc["unlock-higher-power"] = firmwareOptions.unlock_higher_power;
-    #if defined(PLATFORM_ESP32)
-    JsonArray colors = doc.createNestedArray("button-colors");
-    copyArray(firmwareOptions.button_colors, ARRAY_SIZE(firmwareOptions.button_colors), colors);
-    #endif
     #else
     doc["rcvr-uart-baud"] = firmwareOptions.uart_baud;
     doc["rcvr-invert-tx"] = firmwareOptions.invert_tx;
@@ -245,31 +250,14 @@ void serializeOptions()
     #endif
     doc["domain"] = firmwareOptions.domain;
 
-    serializeJson(doc, builtinOptions);
+    serializeJson(doc, stream);
 }
 
 void saveOptions()
 {
     File options = SPIFFS.open("/options.json", "w");
-    options.print(builtinOptions);
+    saveOptions(options);
     options.close();
-}
-
-String& getOptions()
-{
-    File file = SPIFFS.open("/options.json", "r");
-    if (!file || file.isDirectory())
-    {
-        if (file)
-        {
-            file.close();
-        }
-        // Try JSON at the end of the firmware
-        return builtinOptions;
-    }
-    builtinOptions = file.readString();
-    file.close();
-    return builtinOptions;
 }
 
 bool options_init()
@@ -317,7 +305,6 @@ bool options_init()
             file.close();
         }
         // Try JSON at the end of the firmware
-        builtinOptions.clear();
         DeserializationError error = deserializeJson(doc, ((const char *)buf) + 16 + 128, strnlen(((const char *)buf) + 16 + 128, 512));
         if (error)
         {
@@ -382,7 +369,8 @@ bool options_init()
         }
     }
 
-    serializeOptions();
+    builtinOptions.clear();
+    saveOptions(builtinOptions);
 
     debugFreeInitLogger();
 

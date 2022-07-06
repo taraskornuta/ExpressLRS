@@ -173,12 +173,6 @@
                 "layout_file": "Generic 2400.json",
                 "upload_methods": ["uart", "wifi", "betaflight"]
             },
-            "vtx": {
-                "product_name": "Generic ESP8285 + VTx 2.4Ghz RX",
-                "lua_name": "ELRS+VTx 2400RX",
-                "layout_file": "Generic 2400 VTX.json",
-                "upload_methods": ["uart", "wifi", "betaflight"]
-            },
             "pwm5": {
                 "product_name": "Generic ESP8285 + 5xPWM 2.4Ghz RX",
                 "lua_name": "ELRS+PWM 2400RX",
@@ -363,11 +357,25 @@
                 "layout_file": "Jumper T-Pro.json",
                 "upload_methods": ["uart", "wifi", "etx"]
             },
+            "t-lite": {
+                "product_name": "Jumper AION T-Lite 2.4GHz TX",
+                "lua_name": "AION T-Lite TX",
+                "layout_file": "Jumper T-Lite.json",
+                "upload_methods": ["uart", "wifi", "etx"]
+            },
             "nano": {
                 "product_name": "Jumper AION Nano 2.4GHz TX",
                 "lua_name": "AION 2G4NANO TX",
                 "layout_file": "Jumper AION Nano.json",
                 "upload_methods": ["uart", "wifi"]
+            }
+        },
+        "rx_2400": {
+            "nano": {
+                "product_name": "Jumper AION Nano 2.4GHz RX",
+                "lua_name": "AION 2G4NANORX",
+                "layout_file": "Generic 2400 PA.json",
+                "upload_methods": ["uart", "wifi", "betaflight"]
             }
         }
     },
