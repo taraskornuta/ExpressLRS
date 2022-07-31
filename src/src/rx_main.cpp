@@ -72,6 +72,8 @@ Telemetry telemetry;
 Stream *SerialLogger;
 bool hardwareConfigured = true;
 
+unsigned long deferredCommitTime = 0;
+
 #if defined(PLATFORM_ESP8266) || defined(PLATFORM_ESP32)
 unsigned long rebootTime = 0;
 extern bool webserverPreventAutoStart;
@@ -908,6 +910,7 @@ bool ICACHE_RAM_ATTR RXdoneISR(SX12xxDriverCommon::rx_status const status)
 void ICACHE_RAM_ATTR TXdoneISR()
 {
     Radio.RXnb();
+    POWERMGNT::setPower((PowerLevels_e)constrain(config.GetPower() + MinPower, MinPower, MaxPower));
 #if defined(DEBUG_RX_SCOREBOARD)
     DBGW('T');
 #endif
@@ -1331,10 +1334,11 @@ static void updateSwitchMode()
     SwitchModePending = 0;
 }
 
-static void CheckConfigChangePending()
+static void CheckConfigChangePending(unsigned long now)
 {
-    if (config.IsModified() && !InBindingMode)
+    if (config.IsModified() && !InBindingMode && (deferredCommitTime == 0 || now >= deferredCommitTime))
     {
+        deferredCommitTime = 0;
         LostConnection(false);
         config.Commit();
         devicesTriggerEvent();
@@ -1436,7 +1440,7 @@ void loop()
     }
     #endif
 
-    CheckConfigChangePending();
+    CheckConfigChangePending(now);
     executeDeferredFunction(now);
 
     if (connectionState > MODE_STATES)
