@@ -911,7 +911,6 @@ bool ICACHE_RAM_ATTR RXdoneISR(SX12xxDriverCommon::rx_status const status)
 void ICACHE_RAM_ATTR TXdoneISR()
 {
     Radio.RXnb();
-    POWERMGNT::setPower((PowerLevels_e)constrain(config.GetPower() + MinPower, MinPower, MaxPower));
 #if defined(DEBUG_RX_SCOREBOARD)
     DBGW('T');
 #endif

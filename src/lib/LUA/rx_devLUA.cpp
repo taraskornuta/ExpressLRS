@@ -128,8 +128,7 @@ static void registerLuaParameters()
 #ifdef POWER_OUTPUT_VALUES
   luadevGeneratePowerOpts();
   registerLUAParameter(&luaTlmPower, [](struct luaPropertiesCommon* item, uint8_t arg){
-    // config.SetPower(arg);
-    // POWERMGNT::setPower((PowerLevels_e)constrain(arg + MinPower, MinPower, MaxPower));
+    POWERMGNT::setPower((PowerLevels_e)constrain(arg + MinPower, MinPower, MaxPower));
     deferredCommitTime = millis() + 1000;
     config.SetPower(arg);
     setLuaTextSelectionValue(&luaTlmPower, arg);
