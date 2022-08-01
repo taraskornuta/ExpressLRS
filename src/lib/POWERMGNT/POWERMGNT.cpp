@@ -82,7 +82,6 @@ void POWERMGNT::incSX1280Ouput()
     if (CurrentSX1280Power < 13)
     {
         CurrentSX1280Power++;
-        Radio.SetOutputPower(CurrentSX1280Power);
     }
 }
 
@@ -91,7 +90,6 @@ void POWERMGNT::decSX1280Ouput()
     if (CurrentSX1280Power > -18)
     {
         CurrentSX1280Power--;
-        Radio.SetOutputPower(CurrentSX1280Power);
     }
 }
 
@@ -186,6 +184,8 @@ void POWERMGNT::init()
 #endif
 #if defined(POWER_OUTPUT_DAC)
     TxDAC.init();
+    CurrentSX1280Power = 0;
+    Radio.SetOutputPower(0b0000);
 #elif defined(POWER_OUTPUT_ANALOG)
     //initialize both 12 bit DACs
     pinMode(GPIO_PIN_RFamp_APC1, OUTPUT);
@@ -199,6 +199,12 @@ void POWERMGNT::init()
     // boot by whatever is set in the EEPROM. @wvarty
     analogWrite(GPIO_PIN_RFamp_APC1, 3350); //0-4095 2.7V
     analogWrite(GPIO_PIN_RFamp_APC2, 950);
+
+    CurrentSX1280Power = 0;
+    Radio.SetOutputPower(0b0000);
+#elif defined(POWER_OUTPUT_DACWRITE)
+    CurrentSX1280Power = 0;
+    Radio.SetOutputPower(0b0000);
 #endif
     if (GPIO_PIN_FAN_EN != UNDEF_PIN)
     {
@@ -241,38 +247,42 @@ void POWERMGNT::setPower(PowerLevels_e Power)
     }
 #if defined(POWER_OUTPUT_DAC)
     // DAC is used e.g. for R9M, ES915TX and Voyager
-    Radio.SetOutputPower(0b0000);
     int mV = isDomain868() ? powerValues868[Power - MinPower] :powerValues[Power - MinPower];
     TxDAC.setPower(mV);
 #elif defined(POWER_OUTPUT_ANALOG)
-    Radio.SetOutputPower(0b0000);
     //Set DACs PA5 & PA4
     analogWrite(GPIO_PIN_RFamp_APC1, 3350); //0-4095 2.7V
     analogWrite(GPIO_PIN_RFamp_APC2, powerValues[Power - MinPower]);
 #elif defined(POWER_OUTPUT_DACWRITE) && !defined(TARGET_UNIFIED_TX) && !defined(TARGET_UNIFIED_RX)
-    Radio.SetOutputPower(0b0000);
     dacWrite(GPIO_PIN_RFamp_APC2, powerValues[Power - MinPower]);
 #else
     #if defined(TARGET_UNIFIED_TX) && defined(PLATFORM_ESP32)
     if (POWER_OUTPUT_DACWRITE)
     {
-        Radio.SetOutputPower(0b0000);
         dacWrite(GPIO_PIN_RFamp_APC2, powerValues[Power - MinPower]);
     }
     else
     #endif
     if (POWER_OUTPUT_FIXED != -99)
     {
-        Radio.SetOutputPower(POWER_OUTPUT_FIXED);
+        CurrentSX1280Power = POWER_OUTPUT_FIXED;
     }
     else if (powerValues != nullptr)
     {
         CurrentSX1280Power = powerValues[Power - MinPower] + powerCaliValues[Power];
-        Radio.SetOutputPower(CurrentSX1280Power);
     }
 #endif
     CurrentPower = Power;
     devicesTriggerEvent();
+}
+
+void POWERMGNT::commit()
+{
+    static int8_t existingPower = -99;
+    if (existingPower != CurrentSX1280Power) {
+        Radio.SetOutputPower(CurrentSX1280Power);
+        existingPower = CurrentSX1280Power;
+    }
 }
 
 #endif /* !UNIT_TEST */

@@ -445,6 +445,7 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
   {
     Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
   }
+  POWERMGNT::commit();
 }
 
 /*
@@ -992,6 +993,7 @@ void setup()
 
       POWERMGNT.init();
       DynamicPower_Init();
+      POWERMGNT::commit();
 
       // Set the pkt rate, TLM ratio, and power from the stored eeprom values
       ChangeRadioParams();

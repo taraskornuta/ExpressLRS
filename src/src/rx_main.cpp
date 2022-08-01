@@ -402,6 +402,7 @@ bool ICACHE_RAM_ATTR HandleSendTelemetryResponse()
     {
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
+    POWERMGNT::commit();
     return true;
 }
 
@@ -1173,6 +1174,7 @@ static void setupRadio()
     }
 
     POWERMGNT.setPower((PowerLevels_e)config.GetPower());
+    POWERMGNT::commit();
 
 #if defined(Regulatory_Domain_EU_CE_2400)
     LBTEnabled = (MaxPower > PWR_10mW);

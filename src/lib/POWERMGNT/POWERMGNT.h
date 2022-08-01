@@ -88,6 +88,7 @@ public:
     static void init();
     static void SetPowerCaliValues(int8_t *values, size_t size);
     static void GetPowerCaliValues(int8_t *values, size_t size);
+    static void commit();
 };
 
 
