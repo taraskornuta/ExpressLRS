@@ -402,7 +402,6 @@ bool ICACHE_RAM_ATTR HandleSendTelemetryResponse()
     {
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
-    POWERMGNT::commit();
     return true;
 }
 
@@ -623,6 +622,9 @@ void ICACHE_RAM_ATTR HWtimerCallbackTock()
         Radio.SetPPMoffsetReg(FreqCorrection);
     #endif /* RADIO_SX127X */
     }
+    
+    // Actually set the power output on the Radio if the value has been updated
+    POWERMGNT::commit();
 
     #if defined(DEBUG_RX_SCOREBOARD)
     static bool lastPacketWasTelemetry = false;

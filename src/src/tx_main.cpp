@@ -445,7 +445,6 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
   {
     Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
   }
-  POWERMGNT::commit();
 }
 
 /*
@@ -512,6 +511,8 @@ void ICACHE_RAM_ATTR timerCallbackNormal()
     busyTransmitting = true;
     SendRCdataToRF();
   }
+  // Actually set the power output on the Radio if the value has been updated
+  POWERMGNT::commit();
 }
 
 /*
