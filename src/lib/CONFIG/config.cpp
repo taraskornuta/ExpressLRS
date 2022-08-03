@@ -359,6 +359,16 @@ TxConfig::SetTlm(uint8_t tlm)
 }
 
 void
+TxConfig::SetTlmType(uint8_t type)
+{
+    if (GetTlmType() != type)
+    {
+        m_model->tlmType = type;
+        m_modified |= MODEL_CHANGED;
+    }
+}
+
+void
 TxConfig::SetPower(uint8_t power)
 {
     if (GetPower() != power)

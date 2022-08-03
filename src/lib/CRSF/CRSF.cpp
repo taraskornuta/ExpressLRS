@@ -875,7 +875,13 @@ bool CRSF::UARTwdt()
 
             retval = true;
         }
-        DBGLN("UART STATS Bad:Good = %u:%u", BadPktsCount, GoodPktsCount);
+
+#if defined(DEBUG_LOG)
+        if ((GoodPktsCountResult != GoodPktsCount) || (BadPktsCountResult != BadPktsCount))
+        {
+            DBGLN("UART STATS Bad:Good = %u:%u", BadPktsCount, GoodPktsCount);
+        }
+#endif 
 
         UARTwdtLastChecked = now;
         if (retval)

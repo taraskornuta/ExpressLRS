@@ -27,7 +27,8 @@ typedef struct {
                 boostChannel:3; // dynamic power boost AUX channel
     uint8_t     dynamicPower:1,
                 modelMatch:1,
-                txAntenna:2;    // FUTURE: Which TX antenna to use, 0=Auto
+                txAntenna:2,    // FUTURE: Which TX antenna to use, 0=Auto
+                tlmType:2;
 } model_config_t;
 
 // FUTURE: Designed to hold one RGB LED color in 6-level color, and 2 custom button actions.
@@ -72,6 +73,7 @@ public:
     // Getters
     uint8_t GetRate() const { return m_model->rate; }
     uint8_t GetTlm() const { return m_model->tlm; }
+    uint8_t GetTlmType() const { return m_model->tlmType; }
     uint8_t GetPower() const { return m_model->power; }
     bool GetDynamicPower() const { return m_model->dynamicPower; }
     uint8_t GetBoostChannel() const { return m_model->boostChannel; }
@@ -92,6 +94,7 @@ public:
     // Setters
     void SetRate(uint8_t rate);
     void SetTlm(uint8_t tlm);
+    void SetTlmType(uint8_t type);
     void SetPower(uint8_t power);
     void SetDynamicPower(bool dynamicPower);
     void SetBoostChannel(uint8_t boostChannel);

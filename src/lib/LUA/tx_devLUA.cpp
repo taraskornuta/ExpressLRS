@@ -46,6 +46,13 @@ static struct luaItem_selection luaTlmRate = {
     tlmBandwidth
 };
 
+static struct luaItem_selection luaTlmType = {
+    {"Telem Type", CRSF_TEXT_SELECTION},
+    0, // value
+    "MSP;MavLink v2",
+    emptySpace
+};
+
 //----------------------------POWER------------------
 static struct luaItem_folder luaPowerFolder = {
     {"TX Power", CRSF_FOLDER},pwrFolderDynamicName
@@ -134,6 +141,12 @@ static struct luaItem_command luaRxWebUpdate = {
 
 static struct luaItem_command luaTxBackpackUpdate = {
     {"Enable Backpack WiFi", CRSF_COMMAND},
+    lcsIdle, // step
+    emptySpace
+};
+
+static struct luaItem_command luaTxTlmGCS = {
+    {"Enable MavLink WiFi", CRSF_COMMAND},
     lcsIdle, // step
     emptySpace
 };
@@ -345,11 +358,18 @@ static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
     textConfirm = "Enter WiFi Update?";
     textRunning = "WiFi Running...";
   }
-  else
+  else if ((void *)item == (void *)&luaBLEJoystick)
   {
     targetState = bleJoystick;
     textConfirm = "Start BLE Joystick?";
     textRunning = "Joystick Running...";
+  }
+  else if ((void *)item == (void *)&luaTxTlmGCS)
+  {
+    targetState = tlmPassthro;
+    textConfirm = "Start MavLink passthro?";
+    textRunning = "Tlm Passthro Running...";
+    sendLuaCommandResponse((struct luaItem_command *)item, lcsIdle, emptySpace);
   }
 
   switch ((luaCmdStep_e)arg)
@@ -555,6 +575,9 @@ static void registerLuaParameters()
         config.SetTlm(eRatio);
       }
     });
+    registerLUAParameter(&luaTlmType, [](struct luaPropertiesCommon *item, uint8_t arg) {
+      config.SetTlmType(arg);
+    });
     #if defined(TARGET_TX_FM30)
     registerLUAParameter(&luaBluetoothTelem, [](struct luaPropertiesCommon *item, uint8_t arg) {
       digitalWrite(GPIO_PIN_BLUETOOTH_EN, !arg);
@@ -631,6 +654,7 @@ static void registerLuaParameters()
   #if defined(PLATFORM_ESP32) || defined(PLATFORM_ESP8266)
   registerLUAParameter(&luaWiFiFolder);
   registerLUAParameter(&luaWebUpdate, &luahandWifiBle, luaWiFiFolder.common.id);
+  registerLUAParameter(&luaTxTlmGCS, &luahandWifiBle, luaWiFiFolder.common.id);
   #else
   if (HAS_RADIO || OPT_USE_TX_BACKPACK) {
     registerLUAParameter(&luaWiFiFolder);
@@ -692,6 +716,7 @@ static int event()
   uint8_t currentRate = adjustPacketRateForBaud(config.GetRate());
   setLuaTextSelectionValue(&luaAirRate, RATE_MAX - 1 - currentRate);
   setLuaTextSelectionValue(&luaTlmRate, config.GetTlm());
+  setLuaTextSelectionValue(&luaTlmType, config.GetTlmType());
   setLuaTextSelectionValue(&luaSwitch, config.GetSwitchMode());
   luaSwitch.options = OtaIsFullRes ? switchmodeOpts8ch : switchmodeOpts4ch;
   luadevUpdateModelID();

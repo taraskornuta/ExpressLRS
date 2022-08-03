@@ -900,7 +900,7 @@ static int start()
 
 static int event()
 {
-  if (connectionState == wifiUpdate || connectionState > FAILURE_STATES)
+  if ((connectionState == wifiUpdate) || (connectionState == tlmPassthro) || connectionState > FAILURE_STATES)
   {
     if (!wifiStarted) {
       startWiFi(millis());
