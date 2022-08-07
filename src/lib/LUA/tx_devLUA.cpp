@@ -146,7 +146,7 @@ static struct luaItem_command luaTxBackpackUpdate = {
 };
 
 static struct luaItem_command luaTxTlmGCS = {
-    {"Enable MavLink WiFi", CRSF_COMMAND},
+    {"Enable Tlm WiFi", CRSF_COMMAND},
     lcsIdle, // step
     emptySpace
 };
@@ -367,7 +367,7 @@ static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
   else if ((void *)item == (void *)&luaTxTlmGCS)
   {
     targetState = tlmPassthro;
-    textConfirm = "Start MavLink passthro?";
+    textConfirm = "Start Telemetry passthro?";
     textRunning = "Tlm Passthro Running...";
     sendLuaCommandResponse((struct luaItem_command *)item, lcsIdle, emptySpace);
   }
